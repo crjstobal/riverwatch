@@ -42,7 +42,7 @@ and the backup is stuck at 6.2 ft.
   masked to static structures; dense local normalized cross-correlation (box filters) between frames 15 min apart to
   find flowing water; per-body density and smoothness tests (`connectedComponentsWithStats`) to reject sunlit gravel
   under moving shadows; waterline as a virtual staff gauge with a robust monotone calibration and a physics check.
-- **Agent:** vendor-neutral tool-use loop on the Bedrock Converse API with Amazon Nova 2 Lite; 8 tools; guardrails
+- **Agent:** vendor-neutral tool-use loop on the Bedrock Converse API with Amazon Nova 2 Lite; 9 tools (including a 60-min forecast); guardrails
   and alert levels computed in code; every cycle traced.
 - **AWS:** Lambda on arm64 Graviton (OpenCV 5 from pinned manylinux aarch64 wheels, no container), EventBridge
   Scheduler, Bedrock, S3, CloudFront (origin access control), SNS, SSM Parameter Store; one SAM template.
@@ -53,8 +53,8 @@ and the backup is stuck at 6.2 ft.
 - 3,936 frames, blocked cross-validation by day (the flood day never seen during calibration).
 - When water flows: MAE 0.67 ft (20 cm), 87% of readings within ±1 ft of the official gage.
 - "Crossing under ≥ 1 ft of water" from the camera alone: precision 97%, recall 84%.
-- Agent: 23/24 scenario runs passed (silent gage, stuck gage, night, false camera spike, receding flood, missed
-  detection at dusk, duplicate request), plus a full replay of the 2 October flood on a simulated clock.
+- Agent: 27/27 scenario runs passed (forecast early warning, silent gage, stuck gage, night, false camera spike, receding flood, missed
+  detection at dusk, duplicate request), plus a full replay of the 2 October flood on a simulated clock: early caution 85 minutes before the water covered the crossing.
 - Forecast: 46 closures since 2017, leave-one-year-out; warned ahead in 32, ≥ 30 min ahead in 28; about
   3 warnings a year with the water staying below caution. It cannot warn when rain falls on the crossing's own
   catchment (about half of the events): there the camera's early detection matters.

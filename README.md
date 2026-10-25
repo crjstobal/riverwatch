@@ -25,8 +25,8 @@ silted, washed out, stuck). The USGS already runs more than 1,300 river cameras 
 | Stage error when water flows (daytime, held out) | MAE 0.67 ft (20 cm), 87% of readings within ±1 ft |
 | "Crossing under 1 ft of water" from the camera alone | precision 97%, recall 84% (vision + physics check: 100% / 87%) |
 | 60-min closure forecast (9.5 years, 46 closures, leave-one-year-out) | warned before 32/46 closures, 28 at least 30 min ahead (median lead 38 min); about 3 warnings a year with the water staying below caution |
-| Replay of the 2026-10-02 flash flood | close-crossing requested 20 min after the gage crossed 1 ft over the deck, danger 15 min after 2 ft; never relaxed during the flood |
-| Agent scenario tests (8 scenarios x 3 runs, faults injected) | 23 / 24 passed (failure analysed in the report) |
+| Replay of the 2026-10-02 flash flood | early caution 85 min before the water covered the crossing; close-crossing requested 20 min after; never relaxed during the flood |
+| Agent scenario tests (9 scenarios x 3 runs, faults injected) | 27 / 27 passed |
 | Live finding, 2026-10-25 | the official gage's primary sensor is silent and its secondary sensor is stuck at 6.2 ft; the camera shows a dry crossing and the agent flags the gage instead of raising an alert |
 
 Full numbers: `data/eval/<camera>/summary.json`, `data/eval/agent_scenarios.json`. Technical report: `docs/report.md`.

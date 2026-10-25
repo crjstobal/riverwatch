@@ -24,3 +24,5 @@ docs/video/build/
 docs/video/*.mp4
 docs/video/audio/
 docs/clips/
+data/history/
+data/eval/forecast_cv.npz

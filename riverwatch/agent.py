@@ -247,7 +247,12 @@ def tool_forecast_crossing(ctx: Context) -> dict:
         down = ctx.gage_override(ctx, 24)
     else:
         down = usgs.gage_series(ctx.cfg["site"], ctx.at, 24)
-    if len(down) < 5:  # gage silent: fall back to the camera readings in memory
+    note = ""
+    recent = [v for t, v in down if t >= ctx.at - 6 * 3600]
+    if len(recent) >= 12 and max(recent) - min(recent) <= 0.02 and recent[-1] - ctx.cfg["crossing_deck_ft"] > 0.5:
+        # water over the deck that has not moved 0.02 ft in 6 hours is a stuck sensor, not a river
+        down, note = [], "crossing gage looks stuck (flat for 6 h with water over the deck): not used"
+    if len(down) < 5:  # gage silent or distrusted: fall back to the camera readings in memory
         down = [(x["t"], x["stage"]) for x in ctx.state["readings"] if x["source"] == "camera" and ctx.at - x["t"] <= 86400]
     ups = ctx.cfg.get("upstream", [])
     up = []
@@ -257,7 +262,11 @@ def tool_forecast_crossing(ctx: Context) -> dict:
     if fc is None:
         return {"available": False, "note": "not enough recent data at this gage or upstream for a forecast"}
     fc.update({"available": True, "horizon_min": 60, "skill": FORECAST_SKILL})
-    if fc["warning"] and ctx.state["alert"] == "clear" and not ctx.state.get("pending"):
+    if note:
+        fc["note"] = note
+    top, _ = _highest_trusted_level(ctx)
+    # the forecast only matters before the water arrives: once readings show caution or worse, act on the readings
+    if fc["warning"] and ctx.state["alert"] == "clear" and not ctx.state.get("pending") and top == "clear":
         fc["recommended_action"] = ("call request_human_approval with level='caution' now, as an EARLY WARNING based on "
                                     "this forecast (quote the reason), and set next_check_minutes 15. Do not request "
                                     "close_crossing or danger on a forecast.")

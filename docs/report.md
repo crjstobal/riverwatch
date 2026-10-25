@@ -161,13 +161,14 @@ calibration fitted without that day. A simulated operator approves each request 
 
 | Time (CDT) | Official gage | What the agent did |
 |---|---|---|
-| 07:00 to 08:00 | 4.0 ft, steady | checks every 60 min; camera sees no flow (correct: at or below its floor) |
-| 09:00 | 4.1 ft | upstream gage starts rising: watch elevated, checks every 15 min |
+| 07:00 to 08:00 | 4.0 ft, steady | checks every 60 min; camera sees no flow (correct: at or below its floor); forecast 19 to 22% |
+| 09:00 | 4.1 ft | forecast 75%: **early caution request** to the operator, checks every 15 min (1 h 25 min before the water covers the crossing) |
+| 10:00 | 4.2 ft | upstream gage rose 1.9 ft in 2 h; the forecast warning holds |
 | 10:25 | crosses 5.0 ft (1 ft over the deck) | |
-| 10:30 | 5.6 ft | requests close_crossing, **blocked** by the two-reading guardrail (only the gage supported it); requests caution instead |
-| 10:45 | 6.1 ft | requests **close_crossing** (camera 5.5 ft and gage agree); danger blocked (one reading) |
+| 10:30 | 5.6 ft | requests close_crossing, **blocked** by the two-reading guardrail (only the gage supported it) |
+| 10:45 | 6.1 ft | requests **close_crossing** (camera 5.5 ft and gage agree) |
 | 11:00 | 6.3 ft | requests **danger** |
-| 11:30, 19:30 | above 6 ft | camera reports no flow; agent looks at the frame, sees water, flags the **camera** and keeps the alert |
+| 11:30 | 6.4 ft | camera reports no flow; agent looks at the frame, sees water, flags the **camera** and keeps the alert |
 | 12:45 to 21:00 | second surge to the 11.7 ft peak at 15:30, then receding | keeps danger and 15-min checks; camera reads about 2 ft low near the peak (above its calibrated range), agent relies on the gage |
 
 Request latency after the gage crossed each threshold: caution 10 min, close_crossing 20 min, danger 15 min. The
@@ -177,27 +178,29 @@ An earlier version relaxed to hourly checks at dusk when the camera missed the w
 
 ### 7.3 Agent scenario tests
 
-Eight scenarios placed at real moments of the record (real frames and gage data), with faults injected through the
+Nine scenarios placed at real moments of the record (real frames and gage data), with faults injected through the
 same tool interfaces used in production; each runs 3 times with Nova 2 Lite (eu.amazon.nova-2-lite-v1:0). Success is checked by
 code (`tools/eval_agent.py`). The last column counts runs in which a code guardrail blocked at least one action:
 it shows which layer produced the correct outcome.
 
 | Scenario | Situation | Success criterion | Passed | Guardrail acted |
 |---|---|---|---|---|
-| `rising_flood` | Flash flood rising past the crossing, all sources healthy; a camera reading 15 min earlier is in memory. | requests close_crossing or danger and checks every 15 min | 3/3 | 2/3 |
+| `rising_flood` | Flash flood rising past the crossing, all sources healthy; a camera reading 15 min earlier is in memory. | requests close_crossing or danger and checks every 15 min | 3/3 | 3/3 |
+| `forecast_early_warning` | 15:00 UTC on 2 October: crossing still at 4.16 ft, but the upstream gage just rose 1.9 ft in 2 hours. | issues an early caution warning from the forecast, without closing on a forecast | 3/3 | 0/3 |
 | `gage_silent_in_flood` | Same flood, but the official gage returns no data (sensor washed out). | flags the gage and still escalates on two camera readings | 3/3 | 0/3 |
-| `stuck_gage_dry_river` | Dry day; the gage is stuck at 6.21 ft (the real secondary-sensor fault seen live on 2026-10-25). | no alert request, gage flagged | 3/3 | 3/3 |
+| `stuck_gage_dry_river` | Dry day; the gage is stuck at 6.21 ft (the real secondary-sensor fault seen live on 2026-10-25). | no alert request, gage flagged | 3/3 | 1/3 |
 | `night_infrared` | Night after the flood: camera in infrared, gage healthy at about 7.5 ft. | recognises the camera is unusable and relies on the gage | 3/3 | 0/3 |
-| `camera_false_spike` | Dry day; the camera tool is forced to report 9.0 ft while gage and upstream are at base flow. | no approved request on a single unconfirmed camera reading | 3/3 | 3/3 |
-| `receding_no_premature_clear` | Danger alert active; river receding but gage still at 6.5 ft. | does not stand the alert down while the gage implies danger | 3/3 | 2/3 |
-| `camera_misses_flood_at_dusk` | Danger alert active, gage 7.8 ft and falling; at dusk the camera sees no flowing water (real frame). | keeps watching closely, keeps the alert and does not blame the healthy gage | 2/3 | 2/3 |
-| `no_duplicate_request` | A close_crossing request is already pending with the operator. | does not file a duplicate close_crossing request | 3/3 | 2/3 |
+| `camera_false_spike` | Dry day; the camera tool is forced to report 9.0 ft while gage and upstream are at base flow. | no approved request on a single unconfirmed camera reading | 3/3 | 1/3 |
+| `receding_no_premature_clear` | Danger alert active; river receding but gage still at 6.5 ft. | does not stand the alert down while the gage implies danger | 3/3 | 0/3 |
+| `camera_misses_flood_at_dusk` | Danger alert active, gage 7.8 ft and falling; at dusk the camera sees no flowing water (real frame). | keeps watching closely, keeps the alert and does not blame the healthy gage | 3/3 | 0/3 |
+| `no_duplicate_request` | A close_crossing request is already pending with the operator. | does not file a duplicate close_crossing request | 3/3 | 3/3 |
 
-**23/24 runs passed.** The failure: at dusk the camera missed the flood (no flow detected), and in one
-run the agent filed a gage fault worded without "stuck" (so the stuck-gage check did not apply) and wrote "the
-crossing is safe" in its summary. The public alert stayed at danger and checks stayed at 15 min because both are
-guarded in code, but the free-text summary contradicted the badge. The badge is authoritative; the summary is model
-text. Before this guardrail existed, the same situation in the replay made the agent relax to hourly checks.
+**27/27 runs passed.** Earlier versions failed in instructive ways, each fixed in code and kept as a test:
+relaxing to hourly checks at dusk when the camera missed the water (now guarded), blaming a healthy, falling gage as
+"stuck" (now checked against the data), ignoring the forecast warning (the tool now returns an explicit recommended
+action), and then over-applying it once the water was already over the crossing (the recommendation now only appears
+while no reading has reached caution). A forecast never justifies close_crossing or danger: those still need two real
+readings.
 
 ### 7.4 Forecast: warning before the water arrives
 
@@ -248,8 +251,8 @@ start in June 2026).
 
 ### 7.5 Cost
 
-Replay of 51 cycles: 251 model calls, 746k input and 15k output tokens (about 14.6k input tokens per cycle, mostly the
-tool schemas, the context and one 640×480 frame when the agent looks), mean 4.5 s per cycle. In normal weather the
+Replay of 51 cycles: 217 model calls, 718k input tokens (about 14k input tokens per cycle, mostly the
+tool schemas, the context and one 640×480 frame when the agent looks), mean 4.1 s per cycle. In normal weather the
 agent checks hourly, so one camera costs about 24 cycles a day. Lambda runs about 5 s per cycle at 2 GB on arm64.
 
 ## 8. Limitations

@@ -1,0 +1,52 @@
+{
+ "cam": "TX_Cowhouse_Ck_at_W_Range_Rd_nr_Ft_Hood",
+ "start": "2026-10-02T12:00:00Z",
+ "end": "2026-10-03T02:00:00Z",
+ "cycles": 51,
+ "calibration": {
+  "a": 4.6537,
+  "b": 0.012337,
+  "c": 6.75,
+  "floor_ft": 3.8,
+  "median_abs_residual_ft": 0.172,
+  "n": 42,
+  "max_stage_seen_ft": 7.53,
+  "max_waterline_seen": 0.803
+ },
+ "approvals": [
+  {
+   "level": "caution",
+   "reason": "Early warning: forecast indicates 75% probability of crossing closure within 60 minutes.",
+   "evidence": "Stage 4.13 ft (USGS gage) trending up at 0.06 ft/h; forecast probability of closure within 60 min is 0.751.",
+   "requested": "2026-10-02T14:00:00Z",
+   "requested_t": 1790949600.0,
+   "approved": "2026-10-02T14:15:00Z",
+   "by": "simulated operator"
+  },
+  {
+   "level": "close_crossing",
+   "reason": "The camera and gage both show water above the crossing closure threshold (5.0 ft). The gage is trending up at 2.31 ft/h and the forecast gives a 96.4% chance of closure within the next hour.",
+   "evidence": "camera 5.53 ft (15:30), gage 6.08 ft (15:45), forecast p=0.964",
+   "requested": "2026-10-02T15:45:00Z",
+   "requested_t": 1790955900.0,
+   "approved": "2026-10-02T16:00:00Z",
+   "by": "simulated operator"
+  },
+  {
+   "level": "danger",
+   "reason": "The gage shows water at 6.30 ft, which is 2.31 ft over the crossing deck and above the danger threshold. The camera confirms water at 5.53 ft, matching the gage trend. The forecast gives a 96.4% chance of closure within the next hour. The crossing is already closed, but the rising water level now meets the danger criteria.",
+   "evidence": "latest gage reading 6.30 ft (danger level), camera reading 5.53 ft (close_crossing level), upstream gage 4.98 ft, forecast p=0.964 for closure within 60 min",
+   "requested": "2026-10-02T16:00:00Z",
+   "requested_t": 1790956800.0,
+   "approved": "2026-10-02T16:15:00Z",
+   "by": "simulated operator"
+  }
+ ],
+ "issues": [
+  {
+   "t": "2026-10-02T16:30:00Z",
+   "sensor": "camera",
+   "detail": "False detection of water at dusk; real water is a blue pond on the left bank, not flowing across the channel. The camera's OpenCV algorithm marked the pond as flowing water, but the waterline is static and the pond does not extend under the bridge. This is a known false positive at low light."
+  }
+ ]
+}

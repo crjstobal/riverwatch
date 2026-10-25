@@ -53,19 +53,17 @@ SEGMENTS = [
              "in the morning, and the warning fired twenty-five minutes before the water covered the crossing. Tested "
              "year by year on data it never saw, it warned before thirty-two of forty-six closures, most of them at "
              "least half an hour ahead."},
-    {"id": "s5_agent", "visual": {"type": "cued", "src": [["@replay_02.png", None], ["@replay_03.png", "and the agent switches"],
-                                                           ["@replay_06.png", "At ten twenty-five"],
-                                                           ["@replay_08.png", "The agent asks to close"],
-                                                           ["@replay_09.png", "fifteen minutes later"],
+    {"id": "s5_agent", "visual": {"type": "cued", "src": [["@replay_02.png", None], ["@replay_08.png", "At ten twenty-five"],
+                                                           ["@replay_09.png", "Fifteen minutes later"],
                                                            ["@replay_10.png", "Nothing reaches the public"],
                                                            ["@replay_12.png", "When the camera misses"]]},
      "text": "An Amazon Nova agent on Bedrock decides what to do next. This is a replay of October second on a simulated "
-             "clock. At nine in the morning the upstream gage starts rising, and the agent switches from hourly checks "
-             "to every fifteen minutes. At ten twenty-five the water covers the crossing. The agent asks to close it, "
-             "but a guardrail in code blocks the request: escalation needs two independent readings. It asks for "
-             "caution instead, and fifteen minutes later, with camera and gage agreeing, it asks the duty operator to "
-             "close the crossing. Nothing reaches the public without a human. When the camera misses water, the agent "
-             "looks at the frame itself and flags the camera."},
+             "clock. At nine in the morning the forecast warns, and the agent sends the duty operator an early caution, "
+             "an hour and a half before the water arrives. At ten twenty-five the water covers the crossing. The agent "
+             "asks to close it, but a guardrail in code blocks the request: escalation needs two independent readings. "
+             "Fifteen minutes later, with camera and gage agreeing, it asks the operator to close the crossing. Nothing "
+             "reaches the public without a human. When the camera misses water, the agent looks at the frame itself and "
+             "flags the camera."},
     {"id": "s6_aws", "visual": {"type": "clips", "src": [["4_architecture.webm", 1.2], ["1_hero_live.webm", 5.0]]},
      "text": "It runs live on AWS. A Lambda function on Graviton runs OpenCV and the agent every fifteen minutes, S3 and "
              "CloudFront serve this page, and SNS notifies the operator. Today it reports the crossing as dry and the "
