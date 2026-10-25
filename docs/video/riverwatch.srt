@@ -1,260 +1,296 @@
 1
-00:00:03,699 --> 00:00:06,881
+00:00:03,699 --> 00:00:06,951
 On October second, this low-water crossing near Fort Hood,
 
 2
-00:00:06,881 --> 00:00:09,888
+00:00:06,951 --> 00:00:09,911
 Texas, went from dry to more than seven feet under
 
 3
-00:00:09,888 --> 00:00:12,199
+00:00:09,911 --> 00:00:11,990
 water in about six hours.
 
 4
-00:00:12,199 --> 00:00:15,368
+00:00:11,990 --> 00:00:15,229
 Over half of flood drownings happen when someone drives into
 
 5
-00:00:15,368 --> 00:00:16,645
+00:00:15,229 --> 00:00:16,552
 water like this.
 
 6
-00:00:16,645 --> 00:00:19,071
+00:00:16,552 --> 00:00:18,955
 RiverWatch watches crossings like this one,
 
 7
-00:00:19,071 --> 00:00:21,793
+00:00:18,955 --> 00:00:21,979
 through cameras that already exist.
 
 8
-00:00:22,100 --> 00:00:22,739
+00:00:22,279 --> 00:00:23,034
 The U.S.
 
 9
-00:00:22,739 --> 00:00:26,732
+00:00:23,034 --> 00:00:27,202
 Geological Survey runs more than thirteen hundred river cameras,
 
 10
-00:00:26,732 --> 00:00:29,066
+00:00:27,202 --> 00:00:29,535
 and nobody measures their images.
 
 11
-00:00:29,066 --> 00:00:31,690
+00:00:29,535 --> 00:00:32,113
 Gages fail exactly when they matter.
 
 12
-00:00:31,690 --> 00:00:34,499
+00:00:32,113 --> 00:00:34,968
 Right now, the official gage at this crossing has a
 
 13
-00:00:34,499 --> 00:00:38,249
+00:00:34,968 --> 00:00:38,266
 silent primary sensor and a backup stuck at six point
 
 14
-00:00:38,249 --> 00:00:42,098
+00:00:38,266 --> 00:00:41,812
 two feet, while the camera shows a dry creek.
 
 15
-00:00:42,400 --> 00:00:45,779
+00:00:42,112 --> 00:00:45,560
 Everything visual is classical OpenCV 5,
 
 16
-00:00:45,779 --> 00:00:47,450
+00:00:45,560 --> 00:00:47,336
 with no trained network.
 
 17
-00:00:47,450 --> 00:00:50,933
+00:00:47,336 --> 00:00:50,924
 A quality gate rejects infrared night frames,
 
 18
-00:00:50,933 --> 00:00:52,408
+00:00:50,924 --> 00:00:52,422
 blur and fog.
 
 19
-00:00:52,408 --> 00:00:57,016
+00:00:52,422 --> 00:00:57,170
 ECC registration aligns each frame using only the bridge and
 
 20
-00:00:57,016 --> 00:00:57,922
+00:00:57,170 --> 00:00:58,343
 the banks.
 
 21
-00:00:57,922 --> 00:01:02,891
+00:00:58,343 --> 00:01:02,963
 A dense normalized cross-correlation between frames fifteen minutes apart shows
 
 22
-00:01:02,891 --> 00:01:03,959
+00:01:02,963 --> 00:01:03,985
 what moved:
 
 23
-00:01:03,959 --> 00:01:06,026
+00:01:03,985 --> 00:01:05,831
 flowing water changes everywhere,
 
 24
-00:01:06,026 --> 00:01:07,651
+00:01:05,831 --> 00:01:07,445
 concrete does not.
 
 25
-00:01:07,651 --> 00:01:10,380
+00:01:07,445 --> 00:01:10,208
 Each water body must be dense and smooth,
 
 26
-00:01:10,380 --> 00:01:13,642
+00:01:10,208 --> 00:01:13,389
 which rejects sunlit gravel under a moving shadow.
 
 27
-00:01:13,642 --> 00:01:16,150
+00:01:13,389 --> 00:01:15,874
 The top edge of the water across the channel becomes
 
 28
-00:01:16,150 --> 00:01:17,717
+00:01:15,874 --> 00:01:17,522
 a virtual staff gauge,
 
 29
-00:01:17,717 --> 00:01:20,648
+00:01:17,522 --> 00:01:20,314
 calibrated against the official gage.
 
 30
-00:01:20,949 --> 00:01:25,535
+00:01:20,645 --> 00:01:25,034
 We evaluated on almost four thousand frames with cross-validation by
 
 31
-00:01:25,535 --> 00:01:29,030
+00:01:25,034 --> 00:01:28,447
 day, so the flood day was never used for calibration.
 
 32
-00:01:29,030 --> 00:01:32,756
+00:01:28,447 --> 00:01:31,918
 When water flows, the camera is within twenty centimetres on
 
 33
-00:01:32,756 --> 00:01:36,692
+00:01:31,918 --> 00:01:36,133
 average, and eighty-seven percent of readings are within one foot.
 
 34
-00:01:36,692 --> 00:01:38,073
+00:01:36,133 --> 00:01:37,561
 For the question that matters,
 
 35
-00:01:38,073 --> 00:01:40,186
+00:01:37,561 --> 00:01:39,813
 is the crossing under a foot of water,
 
 36
-00:01:40,186 --> 00:01:42,990
+00:01:39,813 --> 00:01:42,872
 precision is ninety-seven percent.
 
 37
-00:01:43,290 --> 00:01:46,877
-An Amazon Nova agent on Bedrock decides what to do
+00:01:43,179 --> 00:01:45,431
+RiverWatch also looks ahead.
 
 38
-00:01:46,877 --> 00:01:50,163
-next. This is a replay of October second on a
+00:01:45,431 --> 00:01:49,112
+A small forecast, trained on nine and a half years
 
 39
-00:01:50,163 --> 00:01:51,626
-simulated clock.
+00:01:49,112 --> 00:01:52,931
+of both gages, predicts whether the crossing will close within
 
 40
-00:01:51,626 --> 00:01:55,190
-At nine in the morning the upstream gage starts rising,
+00:01:52,931 --> 00:01:54,116
+the next hour.
 
 41
-00:01:55,190 --> 00:01:58,615
-and the agent switches from hourly checks to every fifteen
+00:01:54,116 --> 00:01:57,251
+On October second, the upstream gage jumped at ten in
 
 42
-00:01:58,615 --> 00:02:02,342
-minutes. At ten twenty-five the water covers the crossing.
+00:01:57,251 --> 00:02:00,583
+the morning, and the warning fired twenty-five minutes before the
 
 43
-00:02:02,342 --> 00:02:04,478
-The agent asks to close it,
+00:02:00,583 --> 00:02:02,150
+water covered the crossing.
 
 44
-00:02:04,478 --> 00:02:07,671
-but a guardrail in code blocks the request:
+00:02:02,150 --> 00:02:05,215
+Tested year by year on data it never saw,
 
 45
-00:02:07,671 --> 00:02:10,864
-escalation needs two independent readings.
+00:02:05,215 --> 00:02:08,617
+it warned before thirty-two of forty-six closures,
 
 46
-00:02:10,864 --> 00:02:12,907
-It asks for caution instead,
+00:02:08,617 --> 00:02:11,397
+most of them at least half an hour ahead.
 
 47
-00:02:12,907 --> 00:02:14,614
-and fifteen minutes later,
+00:02:11,712 --> 00:02:15,149
+An Amazon Nova agent on Bedrock decides what to do
 
 48
-00:02:14,614 --> 00:02:16,704
-with camera and gage agreeing,
+00:02:15,149 --> 00:02:18,411
+next. This is a replay of October second on a
 
 49
-00:02:16,704 --> 00:02:20,001
-it asks the duty operator to close the crossing.
+00:02:18,411 --> 00:02:19,932
+simulated clock.
 
 50
-00:02:20,001 --> 00:02:22,590
-Nothing reaches the public without a human.
+00:02:19,932 --> 00:02:22,811
+At nine in the morning the forecast warns,
 
 51
-00:02:22,590 --> 00:02:24,436
-When the camera misses water,
+00:02:22,811 --> 00:02:26,434
+and the agent sends the duty operator an early caution,
 
 52
-00:02:24,436 --> 00:02:27,280
-the agent looks at the frame itself and flags the
+00:02:26,434 --> 00:02:29,383
+an hour and a half before the water arrives.
 
 53
-00:02:27,280 --> 00:02:28,505
-camera.
+00:02:29,383 --> 00:02:32,262
+At ten twenty-five the water covers the crossing.
 
 54
-00:02:28,823 --> 00:02:31,029
-It runs live on AWS.
+00:02:32,262 --> 00:02:34,456
+The agent asks to close it,
 
 55
-00:02:31,029 --> 00:02:35,522
-A Lambda function on Graviton runs OpenCV and the agent
+00:02:34,456 --> 00:02:37,556
+but a guardrail in code blocks the request:
 
 56
-00:02:35,522 --> 00:02:39,655
-every fifteen minutes, S3 and CloudFront serve this page,
+00:02:37,556 --> 00:02:40,818
+escalation needs two independent readings.
 
 57
-00:02:39,655 --> 00:02:42,430
-and SNS notifies the operator.
+00:02:40,818 --> 00:02:44,359
+Fifteen minutes later, with camera and gage agreeing,
 
 58
-00:02:42,430 --> 00:02:45,251
-Today it reports the crossing as dry and the official
+00:02:44,359 --> 00:02:47,192
+it asks the operator to close the crossing.
 
 59
-00:02:45,251 --> 00:02:49,796
-gage as broken, instead of raising a false alarm.
+00:02:47,192 --> 00:02:49,851
+Nothing reaches the public without a human.
 
 60
-00:02:50,096 --> 00:02:52,081
-It works on one camera so far,
+00:02:49,851 --> 00:02:51,592
+When the camera misses water,
 
 61
-00:02:52,081 --> 00:02:55,367
-in daylight, with a quick calibration per site.
+00:02:51,592 --> 00:02:54,309
+the agent looks at the frame itself and flags the
 
 62
-00:02:55,367 --> 00:02:57,132
-The limits are in the report.
+00:02:54,309 --> 00:02:55,487
+camera.
 
 63
-00:02:57,132 --> 00:02:59,442
-But the cameras are already there.
+00:02:55,787 --> 00:02:58,132
+It runs live on AWS.
 
 64
-00:02:59,442 --> 00:03:02,449
-RiverWatch turns them into a second pair of eyes for
+00:02:58,132 --> 00:03:02,683
+A Lambda function on Graviton runs OpenCV and the agent
 
 65
-00:03:02,449 --> 00:03:03,917
+00:03:02,683 --> 00:03:07,142
+every fifteen minutes, S3 and CloudFront serve this page,
+
+66
+00:03:07,142 --> 00:03:09,847
+and SNS notifies the operator.
+
+67
+00:03:09,847 --> 00:03:12,725
+Today it reports the crossing as dry and the official
+
+68
+00:03:12,725 --> 00:03:17,224
+gage as broken, instead of raising a false alarm.
+
+69
+00:03:17,524 --> 00:03:19,614
+It works on one camera so far,
+
+70
+00:03:19,614 --> 00:03:22,853
+in daylight, with a quick calibration per site.
+
+71
+00:03:22,853 --> 00:03:24,594
+The limits are in the report.
+
+72
+00:03:24,594 --> 00:03:26,684
+But the cameras are already there.
+
+73
+00:03:26,684 --> 00:03:29,656
+RiverWatch turns them into a second pair of eyes for
+
+74
+00:03:29,656 --> 00:03:31,206
 every crossing.
 
