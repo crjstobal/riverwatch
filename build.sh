@@ -8,6 +8,7 @@ python3 -m pip install --quiet --target build --only-binary=:all: \
   -r requirements-lambda.txt
 cp -r riverwatch lambda_function.py cameras.json build/
 mkdir -p build/profiles && cp -r profiles/* build/profiles/
+mkdir -p build/models && cp models/forecast.json build/models/
 find build -name "__pycache__" -prune -exec rm -rf {} +
 # boto3 is provided by the Lambda runtime; drop test folders to keep the package small
 rm -rf build/numpy/*/tests build/cv2/data 2>/dev/null || true

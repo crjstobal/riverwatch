@@ -24,6 +24,7 @@ silted, washed out, stuck). The USGS already runs more than 1,300 river cameras 
 | Protocol | blocked cross-validation by day: each day predicted with a calibration fitted on the other days |
 | Stage error when water flows (daytime, held out) | MAE 0.67 ft (20 cm), 87% of readings within ±1 ft |
 | "Crossing under 1 ft of water" from the camera alone | precision 97%, recall 84% (vision + physics check: 100% / 87%) |
+| 60-min closure forecast (9.5 years, 46 closures, leave-one-year-out) | warned before 32/46 closures, 28 at least 30 min ahead (median lead 38 min); about 3 warnings a year with the water staying below caution |
 | Replay of the 2026-10-02 flash flood | close-crossing requested 20 min after the gage crossed 1 ft over the deck, danger 15 min after 2 ft; never relaxed during the flood |
 | Agent scenario tests (8 scenarios x 3 runs, faults injected) | 23 / 24 passed (failure analysed in the report) |
 | Live finding, 2026-10-25 | the official gage's primary sensor is silent and its secondary sensor is stuck at 6.2 ft; the camera shows a dry crossing and the agent flags the gage instead of raising an alert |
@@ -46,9 +47,14 @@ Full numbers: `data/eval/<camera>/summary.json`, `data/eval/agent_scenarios.json
 5. Stage: robust monotone calibration `stage = a + b·exp(c·h)`, fitted on frames with a known stage; readings far
    above the calibrated range are flagged instead of extrapolated. A physics check holds implausible jumps.
 
+**Forecast (`riverwatch/forecast.py`)**: probability that the crossing closes within 60 minutes, from the last 24 hours
+at the crossing gage and at the gage 12 km upstream; a gradient-boosted tree ensemble trained on 9.5 years of both
+gages (exported to JSON, evaluated with numpy) plus a physical rule (upstream rise of 1 ft in 2 hours). Train and
+evaluate with `tools/history.py` and `tools/train_forecast.py`.
+
 **Decision and action (`riverwatch/agent.py`)**: a vendor-neutral tool-use loop; `riverwatch/bedrock.py` is the only
 module that knows the model (Amazon Nova 2 Lite via the Bedrock Converse API). Tools: `measure_camera`,
-`view_camera_frame` (the model sees the OpenCV-annotated frame), `get_gage`, `get_upstream`, `set_watch_level`,
+`view_camera_frame` (the model sees the OpenCV-annotated frame), `get_gage`, `get_upstream`, `forecast_crossing`, `set_watch_level`,
 `flag_sensor_issue`, `request_human_approval`. What OpenCV measures changes what happens next: the sampling cadence
 (15 / 30 / 60 min), which source the agent trusts, sensor fault reports, and requests to the operator.
 
@@ -68,6 +74,8 @@ API through CloudFront; Bedrock (Nova 2 Lite) for decisions; SNS for operator no
 ```
 riverwatch/vision.py     OpenCV 5 perception
 riverwatch/physics.py    plausibility filter
+riverwatch/forecast.py   60-min closure forecast (numpy evaluator of exported trees)
+models/forecast.json     trained forecast
 riverwatch/agent.py      agent loop, tools, guardrails
 riverwatch/bedrock.py    Amazon Bedrock adapter
 riverwatch/usgs.py       USGS NIMS (cameras) and NWIS (gages) access with a simulated clock
@@ -90,10 +98,13 @@ python tools/download.py TX_Cowhouse_Ck_at_W_Range_Rd_nr_Ft_Hood 2026-09-10 2026
 # 2. vision evaluation (about 4 min on a laptop): writes data/eval/<camera>/summary.json and timeseries.png
 python tools/evaluate.py TX_Cowhouse_Ck_at_W_Range_Rd_nr_Ft_Hood
 
-# 3. production calibration
+# 3. forecast: 9.5 years of both gages, leave-one-year-out evaluation, exported model in models/forecast.json
+python tools/history.py && python tools/train_forecast.py && python tools/plot_forecast.py
+
+# 4. production calibration
 python tools/make_profile.py TX_Cowhouse_Ck_at_W_Range_Rd_nr_Ft_Hood
 
-# 4. agent (needs AWS credentials with Bedrock access to Amazon Nova in eu-west-3)
+# 5. agent (needs AWS credentials with Bedrock access to Amazon Nova in eu-west-3)
 python tools/eval_agent.py 3
 python tools/replay.py TX_Cowhouse_Ck_at_W_Range_Rd_nr_Ft_Hood 2026-10-02T12:00:00Z 2026-10-03T02:00:00Z flood-2026-10-02
 ```

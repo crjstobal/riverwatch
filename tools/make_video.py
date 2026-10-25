@@ -47,6 +47,12 @@ SEGMENTS = [
              "for calibration. When water flows, the camera is within twenty centimetres on average, and eighty-seven "
              "percent of readings are within one foot. For the question that matters, is the crossing under a foot of "
              "water, precision is ninety-seven percent."},
+    {"id": "s4b_forecast", "visual": {"type": "cued", "src": [["f1_oct2.png", None], ["f2_leads.png", "Tested year by year"]]},
+     "text": "RiverWatch also looks ahead. A small forecast, trained on nine and a half years of both gages, predicts "
+             "whether the crossing will close within the next hour. On October second, the upstream gage jumped at ten "
+             "in the morning, and the warning fired twenty-five minutes before the water covered the crossing. Tested "
+             "year by year on data it never saw, it warned before thirty-two of forty-six closures, most of them at "
+             "least half an hour ahead."},
     {"id": "s5_agent", "visual": {"type": "cued", "src": [["@replay_02.png", None], ["@replay_03.png", "and the agent switches"],
                                                            ["@replay_06.png", "At ten twenty-five"],
                                                            ["@replay_08.png", "The agent asks to close"],

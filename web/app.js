@@ -22,6 +22,9 @@ function setBadge(el, level) {
   el.textContent = LEVEL_TEXT[level] || level;
 }
 
+const fcText = (f) => !f ? "–" : (f.p == null ? "upstream rule only (crossing gage silent): " + (f.warning ? `early warning (${f.why})` : "no warning")
+  : `${Math.round(f.p * 100)}% chance the crossing closes` + (f.warning ? ` · early warning (${f.why})` : ""));
+
 // ---------------------------------------------------------------- charts (SVG)
 function chart(el, { series, t0, t1, yMin, yMax, markers = [], cursor = null, thresholds = true }) {
   const W = el.clientWidth || 800, H = el.clientHeight || 220, L = 40, R = 10, T = 10, B = 24;
@@ -65,6 +68,9 @@ function traceItems(steps) {
       else if (st.tool === "get_gage") txt = o.available ? `gage ${ft(o.latest_ft)}, trend ${o.trend_ft_per_h ?? "–"} ft/h` : (o.note || "gage silent");
       else if (st.tool === "get_upstream") txt = (o.upstream || []).map((u) => u.available ? `upstream ${ft(u.latest_ft)}, trend ${u.trend_ft_per_h ?? "–"} ft/h` : "upstream silent").join("; ");
       else if (st.tool === "view_camera_frame") txt = "looked at the annotated frame";
+      else if (st.tool === "forecast_crossing") txt = o.available === false ? (o.note || "no forecast")
+        : (o.p_close_within_60min == null ? "upstream rule only (crossing gage silent)" : `P(close within 60 min) ${Math.round(o.p_close_within_60min * 100)}%`)
+          + (o.warning ? ", early warning: " + o.why : ", no warning");
       else if (st.tool === "set_watch_level") txt = `watch ${st.input.level}, next check in ${st.input.next_check_minutes} min`;
       else if (st.tool === "request_human_approval") txt = o.blocked_by_guardrail ? `BLOCKED by guardrail: ${o.note}` : `asked operator for "${st.input.level}": ${st.input.reason}`;
       else if (st.tool === "flag_sensor_issue") txt = `flagged ${st.input.sensor}: ${st.input.detail}`;
@@ -88,6 +94,7 @@ async function loadLive() {
   setBadge($("live-alert"), cam.alert);
   $("live-summary").textContent = cam.summary;
   $("live-watch").textContent = cam.watch;
+  $("live-forecast").textContent = fcText(cam.forecast);
   $("live-next").textContent = `${cam.next_check_minutes} min`;
   $("live-cycle").textContent = cam.last_cycle ? `${fmtTime(cam.last_cycle.at)} · ${cam.last_cycle.model_calls} model calls · ${cam.last_cycle.latency_s}s` : "–";
   $("live-issues").innerHTML = (cam.issues || []).slice(-2).map((i) => `<div class="issue"><b>${i.sensor} issue</b> (${fmtTime(i.t)}): ${escapeHTML(i.detail)}</div>`).join("");
@@ -147,6 +154,7 @@ function showCycle(i) {
   $("replay-truth").textContent = ft(c.truth_stage_ft);
   $("replay-cam").textContent = c.camera_stage_ft == null ? (c.camera_note || "unusable") : ft(c.camera_stage_ft);
   $("replay-next").textContent = `${c.state.next_check_minutes} min`;
+  $("replay-forecast").textContent = fcText(c.state.forecast);
   $("replay-trace").innerHTML = traceItems(c.steps);
   const markers = RP.cycles.flatMap((cc) => (cc.steps || []).filter((s) => s.tool === "request_human_approval" && s.output && s.output.ok)
     .map(() => ({ t: cc.t, color: "#b00020", label: `operator asked at ${fmtTime(cc.at)}` })));
@@ -161,6 +169,17 @@ function showCycle(i) {
 }
 
 // ---------------------------------------------------------------- evaluation
+async function loadForecastEval() {
+  const s = (await getJSON("data/eval/forecast_summary.json")).alarms.shipped_boosting_p50_or_upstream;
+  const stat = (b, t) => `<div class="stat"><b>${b}</b><span>${t}</span></div>`;
+  $("fc-stats").innerHTML = [
+    stat(`${s.warned_ahead} / ${s.events}`, "closures warned before the gage crossed the line"),
+    stat(`${s.warned_30min_ahead}`, "of them at least 30 minutes ahead"),
+    stat(`${Math.round(s.median_lead_min)} min`, "median lead time over all 46 closures"),
+    stat(`${s.alarms_with_water_below_caution_per_year} / yr`, "warnings with the water staying below caution"),
+  ].join("");
+}
+
 async function loadEval() {
   const s = await getJSON("data/eval/summary.json");
   const v = s.vision_only, f = v.flood;
@@ -180,6 +199,6 @@ async function loadEval() {
   ].map((t) => `<li>${t}</li>`).join("");
 }
 
-loadLive(); loadReplay().catch(() => {}); loadEval().catch(() => {});
+loadLive(); loadReplay().catch(() => {}); loadEval().catch(() => {}); loadForecastEval().catch(() => {});
 setInterval(loadLive, 60_000);
 addEventListener("resize", () => { if (RP) showCycle(idx); });

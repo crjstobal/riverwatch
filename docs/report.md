@@ -93,13 +93,15 @@ current alert, pending request, recent readings, previous summary). Tools:
 | `view_camera_frame` | the model sees the OpenCV-annotated frame (water in blue, waterline in yellow) |
 | `get_gage` | official primary sensor at the site; reports a silent primary and lists other sensors as not usable for alerts |
 | `get_upstream` | gage 12 km upstream and its trend |
+| `forecast_crossing` | probability that the crossing closes within 60 min and whether the early warning fires (section 7.4) |
 | `set_watch_level` | normal / elevated and the next check interval: 15, 30 or 60 min |
 | `flag_sensor_issue` | maintenance record for the camera or the gage |
 | `request_human_approval` | asks the duty operator to change the public alert, with reason and evidence |
 
 **How the visual evidence changes what happens next.** An unusable frame makes the agent fall back to the gage and
 upstream site; a rising camera stage tightens the sampling cadence from 60 to 15 minutes; a disagreement with the
-gage makes the agent look at the frame and decide which source to trust (or flag one); an implausible or above-range
+gage makes the agent look at the frame and decide which source to trust (or flag one); a forecast warning makes
+it issue an early caution request before the water arrives; an implausible or above-range
 reading is held until confirmed; two readings at or above a level trigger a request to the operator.
 
 **Guardrails in code, not only in the prompt.** (1) Escalating to close_crossing or danger requires two independent
@@ -197,7 +199,54 @@ crossing is safe" in its summary. The public alert stayed at danger and checks s
 guarded in code, but the free-text summary contradicted the badge. The badge is authoritative; the summary is model
 text. Before this guardrail existed, the same situation in the replay made the agent relax to hourly checks.
 
-### 7.4 Cost
+### 7.4 Forecast: warning before the water arrives
+
+The agent's `forecast_crossing` tool predicts whether the crossing closes (stage ≥ 5.0 ft) within the next 60 minutes,
+from the last 24 hours at the crossing gage and at the upstream gage 12 km away (`riverwatch/forecast.py`).
+
+*Physics first.* Over 36 closures with complete data, the flood wave reaches the crossing a median of about 80 minutes
+after the upstream gage (cross-correlation of rises). But in about half of the closures the upstream gage did not rise
+before the crossing did: the rain fell on the crossing's own catchment. A forecast from gages can only help in the
+first case; the camera's early local detection covers the second.
+
+*Model.* Eight features (depth over the deck, local rises over 15 and 60 min, rise above the 24-hour minimum, upstream
+rises over 1, 2 and 4 hours, upstream rise above its minimum) feed a gradient-boosted tree ensemble
+(scikit-learn `HistGradientBoostingClassifier`, 300 trees), exported to JSON and evaluated with numpy in Lambda
+(verified identical to scikit-learn). The warning fires when the probability is ≥ 0.5 or when the upstream gage rose
+≥ 1 ft in 2 hours (a physical rule).
+
+*Data and protocol.* 9.5 years of 15-minute records for both gages (2017-04-12 to 2026-10-24), 46 closures (stage
+reaches 5.0 ft after being below 4.5 ft). Leave-one-year-out: every year is predicted by a model trained on the
+other years. The lead time of an event is how long before the closure the warning fired (within 6 hours, without
+switching off for more than an hour). A warning episode counts against us if the water then stays below the caution
+level (4.5 ft) for 3 hours; episodes that end with the water above caution but below 5.0 ft (near misses with the
+crossing already under half a foot of water) are reported separately.
+
+| Alarm | Closures warned ahead | ≥ 30 min ahead | Lead median / mean (min) | Warnings with water staying below caution, per year |
+|---|---|---|---|---|
+| Gage crosses 5.0 ft (no forecast) | 0/46 | 0 | 0 / 0 | 0.0 |
+| Local trend extrapolation | 31/46 | 23 | 22 / 41 | 9.7 |
+| Upstream rose ≥ 1 ft in 2 h | 8/46 | 8 | 0 / 32 | 0.5 |
+| Logistic regression, p ≥ 0.7 | 27/46 | 19 | 15 / 59 | 2.5 |
+| **Shipped: boosted trees p ≥ 0.5 or upstream rule** | 32/46 | 28 | 38 / 71 | 3.0 |
+
+The local trend warns often but cries wolf (about 125 warning episodes a year that never reach 5.0 ft).
+The shipped forecast warns before 32 of 46 closures, 28 of them at least 30 minutes ahead, with about
+3 warnings a year in which the water stays below caution. Counting near misses, it raises
+26 warning episodes a year that do not reach 5.0 ft; that is acceptable only because a warning
+leads to an early *caution* request and closer checks, never to a closure by itself.
+
+On 2026-10-02 the upstream gage jumped from 2.3 to 4.1 ft between 09:45 and 10:00 local time; the warning fired at
+10:00 and the crossing closed at 10:25.
+
+![Forecast on 2026-10-02](../data/eval/forecast_oct2.png)
+![Lead time per closure](../data/eval/forecast_leads.png)
+
+Limitations: the deck level (3.99 ft) is known from the 2026 sensor only; base flow in earlier years sat 0.3 to 0.5 ft
+higher, so older closures may be slightly misdated. No rainfall input yet (the precipitation gages at both sites
+start in June 2026).
+
+### 7.5 Cost
 
 Replay of 51 cycles: 251 model calls, 746k input and 15k output tokens (about 14.6k input tokens per cycle, mostly the
 tool schemas, the context and one 640×480 frame when the agent looks), mean 4.5 s per cycle. In normal weather the

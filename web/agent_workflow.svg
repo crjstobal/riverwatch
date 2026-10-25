@@ -31,16 +31,16 @@
   <text x="44" y="180" class="s">the model looks at the OpenCV-annotated frame</text>
 
   <rect x="30" y="212" width="320" height="52" rx="10" class="p"/>
-  <text x="44" y="234" class="t">get_gage / get_upstream</text>
-  <text x="44" y="252" class="s">official USGS gage here and 12 km upstream</text>
+  <text x="44" y="234" class="t">get_gage / get_upstream / forecast_crossing</text>
+  <text x="44" y="252" class="s">official gages; 60-min closure forecast (9.5 yr)</text>
 
   <!-- what OpenCV output changes -->
   <rect x="30" y="300" width="320" height="290" rx="10" fill="#fff" stroke="#2f86c9" stroke-dasharray="5 4"/>
   <text x="44" y="324" class="t">What the visual evidence changes</text>
   <text x="44" y="350" class="k">usable = false (night IR, fog, blur, moved)</text>
   <text x="44" y="366" class="s">→ camera ignored, agent uses gage + upstream</text>
-  <text x="44" y="392" class="k">stage rising / above caution</text>
-  <text x="44" y="408" class="s">→ next check in 15 min instead of 60</text>
+  <text x="44" y="392" class="k">stage rising, above caution, forecast warns</text>
+  <text x="44" y="408" class="s">→ 15-min checks; early caution warning</text>
   <text x="44" y="434" class="k">camera and gage disagree by more than 1 ft</text>
   <text x="44" y="450" class="s">→ view_camera_frame, choose a source, flag fault</text>
   <text x="44" y="476" class="k">above_range or plausible = false</text>

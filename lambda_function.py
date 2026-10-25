@@ -44,6 +44,7 @@ def _publish_status(store, cam, state, rec=None, overlay=None):
     entry = {"cam_id": cam, "label": cfg["label"], "site": cfg["site"], "updated": usgs.iso(time.time()),
              "alert": state["alert"], "watch": state["watch"], "pending": state["pending"],
              "next_check_minutes": state["next_check_minutes"], "summary": state["summary"],
+             "forecast": state.get("forecast"),
              "issues": state["issues"][-3:], "readings": state["readings"][-48:]}
     if rec:
         entry["last_cycle"] = {"at": rec["at"], "model_calls": rec["model_calls"], "latency_s": rec["latency_s"],

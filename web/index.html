@@ -43,6 +43,7 @@
         <div class="alert-badge" id="live-alert">…</div>
         <p id="live-summary" class="summary"></p>
         <dl class="facts">
+          <dt>Forecast, next 60 min</dt><dd id="live-forecast">–</dd>
           <dt>Agent watch level</dt><dd id="live-watch">–</dd>
           <dt>Next check</dt><dd id="live-next">–</dd>
           <dt>Last cycle</dt><dd id="live-cycle">–</dd>
@@ -88,6 +89,7 @@
         <dl class="facts">
           <dt>Official gage</dt><dd id="replay-truth">–</dd>
           <dt>Camera (OpenCV 5)</dt><dd id="replay-cam">–</dd>
+          <dt>Forecast, next 60 min</dt><dd id="replay-forecast">–</dd>
           <dt>Next check chosen by agent</dt><dd id="replay-next">–</dd>
         </dl>
       </div>
@@ -100,6 +102,12 @@
     <div class="card-head"><h2>Evaluation</h2><span class="muted">camera stage vs. official USGS gage, 2026-09-09 to 2026-10-20</span></div>
     <div id="eval-stats" class="stats"></div>
     <figure class="wide"><img src="data/eval/timeseries.png" alt="Camera estimates against the official gage over the evaluation period"><figcaption>Blocked cross-validation by day: each day is predicted with a calibration fitted on the other days only.</figcaption></figure>
+    <h3 class="sub">Forecast: warning before the water arrives</h3>
+    <p class="note">A small gradient-boosted model plus a physical rule on the upstream rise, trained on 9.5 years of
+      both gages (46 closures since 2017) and evaluated leave-one-year-out. The gage alone warns 0 minutes ahead.</p>
+    <div id="fc-stats" class="stats"></div>
+    <figure class="wide"><img src="data/eval/forecast_oct2.png" alt="2 October 2026: the upstream gage jumps at 10:00, the forecast warns, and the crossing closes at 10:30"><figcaption>2 October 2026, local time: the upstream gage jumps, the early warning fires at 10:00, the crossing closes at 10:30.</figcaption></figure>
+    <figure class="wide"><img src="data/eval/forecast_leads.png" alt="Warning lead time for each of the 46 closures"><figcaption>Lead time per closure. In about half of the events rain falls on the crossing's own catchment and the upstream gage sees nothing: there the forecast cannot help and the camera's early detection matters.</figcaption></figure>
     <h3 class="sub">Where it fails</h3>
     <ul class="fails" id="eval-fails"></ul>
   </section>

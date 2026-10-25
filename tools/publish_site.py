@@ -25,7 +25,8 @@ def compact_replay(name):
         steps = [{"step": s["step"], "tool": s.get("tool"), "input": s.get("input"),
                   "output": {k: v for k, v in (s.get("output") or {}).items()
                              if k in ("usable", "reasons", "stage_ft", "below_range", "above_range", "available", "note",
-                                      "latest_ft", "trend_ft_per_h", "upstream", "blocked_by_guardrail", "ok")},
+                                      "latest_ft", "trend_ft_per_h", "upstream", "blocked_by_guardrail", "ok",
+                                      "p_close_within_60min", "warning", "why")},
                   "detail": s.get("detail")} for s in c["steps"] if s["step"] != "thought"]
         out.append({"at": c["at"], "t": c["t"], "summary": c["summary"], "state": c["state"], "frame": c.get("frame"),
                     "truth_stage_ft": c["truth_stage_ft"], "model_calls": c["model_calls"],
@@ -49,6 +50,8 @@ def main(bucket, *replays):
     ev = ROOT / "data/eval" / CAM
     put("data/eval/summary.json", (ev / "summary.json").read_bytes(), "application/json")
     put("data/eval/timeseries.png", (ev / "timeseries.png").read_bytes(), "image/png")
+    for f in ("forecast_summary.json", "forecast_oct2.png", "forecast_leads.png"):
+        put(f"data/eval/{f}", (ROOT / "data/eval" / f).read_bytes())
     for name in replays or ["flood-2026-10-02"]:
         rp = compact_replay(name)
         put(f"data/replay/{name}/replay.json", json.dumps(rp).encode(), "application/json", "max-age=300")

@@ -167,6 +167,23 @@ def pipeline():
          ["Robust monotone fit; readings far", "above the calibrated range are", "flagged, not extrapolated.", "", "Held out day by day:", "MAE 0.67 ft (20 cm)", "87% within ±1 ft", "crossing alert precision 97%"])
 
 
+def forecast_slides():
+    for name, src, title, cap in [
+        ("f1_oct2", ROOT / "data/eval/forecast_oct2.png", "6. Looking ahead: will the crossing close within the hour?",
+         "2 October 2026: the upstream gage jumps at 10:00 and the warning fires; the crossing closes at 10:25."),
+        ("f2_leads", ROOT / "data/eval/forecast_leads.png", "Tested on 46 closures since 2017, one year held out at a time",
+         "Blue: warning lead time of the RiverWatch forecast. The gage alone warns 0 minutes ahead.")]:
+        im = canvas(); d = ImageDraw.Draw(im)
+        d.text((90, 60), title, font=font(54, 700), fill=INK)
+        fig = Image.open(src).convert("RGB")
+        w = 1740; h = int(fig.height * w / fig.width)
+        if h > 760:
+            h = 760; w = int(fig.width * h / fig.height)
+        im.paste(fig.resize((w, h), Image.LANCZOS), ((W - w) // 2, 170))
+        d.text((90, 170 + h + 24), cap, font=font(32, 400), fill=MUTED)
+        im.save(OUT / f"{name}.png")
+
+
 def main():
     OUT.mkdir(parents=True, exist_ok=True)
     title_card("t_open", "RiverWatch", "OpenCV 5 + Amazon Nova on AWS watch a flooded low-water crossing",
@@ -175,6 +192,7 @@ def main():
                "Data: USGS (public domain) · research prototype, not an official warning service")
     timelapse()
     pipeline()
+    forecast_slides()
 
 
 if __name__ == "__main__":

@@ -51,6 +51,14 @@ SCENARIOS = [
                                 "requests close_crossing or danger and checks every 15 min"),
     },
     {
+        "id": "forecast_early_warning",
+        "desc": "15:00 UTC on 2 October: crossing still at 4.16 ft, but the upstream gage just rose 1.9 ft in 2 hours.",
+        "at": "2026-10-02T15:00:00Z", "state": {"watch": "elevated", "next_check_minutes": 15},
+        "check": lambda r, st: ("caution" in approvals(r) and st["next_check_minutes"] == 15
+                                and not any(l in ("close_crossing", "danger") for l in approvals(r)),
+                                "issues an early caution warning from the forecast, without closing on a forecast"),
+    },
+    {
         "id": "gage_silent_in_flood",
         "desc": "Same flood, but the official gage returns no data (sensor washed out).",
         "at": "2026-10-02T16:15:00Z", "gage": "silent",

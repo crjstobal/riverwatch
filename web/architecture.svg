@@ -58,7 +58,7 @@
   <text x="570" y="228" class="s">tools: measure_camera,</text>
   <text x="570" y="244" class="s">view_camera_frame, get_gage,</text>
   <text x="570" y="260" class="s">get_upstream, set_watch_level,</text>
-  <text x="570" y="276" class="s">flag_sensor_issue,</text>
+  <text x="570" y="276" class="s">forecast_crossing, flag_sensor_issue,</text>
   <text x="570" y="292" class="s">request_human_approval</text>
   <text x="570" y="318" class="t" font-size="13">Guardrails in code</text>
   <text x="570" y="338" class="s">2 confirmations to escalate</text>

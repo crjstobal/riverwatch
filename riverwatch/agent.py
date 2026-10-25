@@ -20,7 +20,13 @@ from typing import Any, Callable
 import cv2
 import numpy as np
 
-from . import physics, usgs, vision
+from pathlib import Path as _Path
+
+from . import forecast, physics, usgs, vision
+
+_FORECAST = _Path(__file__).resolve().parent.parent / "models" / "forecast.json"
+FORECAST_MODEL = forecast.Model.load(_FORECAST) if _FORECAST.exists() else None
+FORECAST_SKILL = "Held-out skill over 9.5 years (leave-one-year-out): warned before 32 of 46 closures, 28 of them at least 30 min ahead, median lead 38 min; about 3 warnings a year with the water staying below caution. It cannot see rain that falls between the gages and the crossing until the crossing itself starts rising."
 
 MAX_MODEL_CALLS = 8
 CADENCES = {15, 30, 60}
@@ -41,7 +47,10 @@ Facts you can rely on:
   sees no water, suspect the camera first (dusk light, missed detection) and look at the frame.
 - request_human_approval enforces guardrails in code (two confirmations to escalate, no lowering an alert while a
   recent reading still implies a higher level). If a request is blocked, follow the note.
-- get_upstream returns the gage upstream; water there reaches this crossing later.
+- get_upstream returns the gage upstream; water there reaches this crossing later (about 80 min, median).
+- forecast_crossing predicts whether the crossing closes within 60 minutes. If its warning is true while the public
+  alert is clear, request caution as an early warning (say it is a forecast and why) and check every 15 min. A
+  forecast never justifies close_crossing or danger by itself: those need real readings.
 - Alert levels are defined by water depth over the crossing deck (see the context message).
 
 Rules:
@@ -55,7 +64,8 @@ Rules:
    call request_human_approval with the level, a one-paragraph reason and the evidence numbers.
 5. Do not ask for approval again for the same level while one is pending or already approved; update the operator only
    if the situation changed materially.
-6. Choose the next check interval: 15 min if the river is rising, above caution, or sources disagree; 30 min while
+6. Call forecast_crossing every cycle. Choose the next check interval: 15 min if the river is rising, above caution,
+   the forecast warns, or sources disagree; 30 min while
    receding above caution; 60 min when low and stable.
 7. Be brief. Finish with a two-sentence summary for the public status page."""
 
@@ -73,6 +83,10 @@ TOOLS = [
         "inputSchema": {"json": {"type": "object", "properties": {"hours": {"type": "number", "minimum": 1, "maximum": 24}}, "required": []}}}},
     {"toolSpec": {"name": "get_upstream", "description": "Gage height and trend at the upstream station(s), with distance.",
         "inputSchema": {"json": {"type": "object", "properties": {"hours": {"type": "number", "minimum": 1, "maximum": 24}}, "required": []}}}},
+    {"toolSpec": {"name": "forecast_crossing", "description": "Probability that the crossing closes (stage >= the "
+        "close level) within the next 60 minutes, from the last 24 h at this gage and upstream (model trained on 9.5 "
+        "years of history), with whether the early warning fires and why.",
+        "inputSchema": {"json": {"type": "object", "properties": {}, "required": []}}}},
     {"toolSpec": {"name": "set_watch_level", "description": "Set the internal watch level and the next check interval.",
         "inputSchema": {"json": {"type": "object", "properties": {
             "level": {"type": "string", "enum": ["normal", "elevated"]},
@@ -226,13 +240,42 @@ def tool_get_upstream(ctx: Context, hours: float = 3) -> dict:
     return {"upstream": res}
 
 
+def tool_forecast_crossing(ctx: Context) -> dict:
+    if FORECAST_MODEL is None:
+        return {"available": False, "note": "forecast model not installed"}
+    if ctx.gage_override:
+        down = ctx.gage_override(ctx, 24)
+    else:
+        down = usgs.gage_series(ctx.cfg["site"], ctx.at, 24)
+    if len(down) < 5:  # gage silent: fall back to the camera readings in memory
+        down = [(x["t"], x["stage"]) for x in ctx.state["readings"] if x["source"] == "camera" and ctx.at - x["t"] <= 86400]
+    ups = ctx.cfg.get("upstream", [])
+    up = []
+    if ups:
+        up = ctx.upstream_override(ctx, ups[0], 24) if ctx.upstream_override else usgs.gage_series(ups[0]["site"], ctx.at, 24)
+    fc = forecast.from_series(FORECAST_MODEL, down, up, ctx.cfg["crossing_deck_ft"], ctx.at)
+    if fc is None:
+        return {"available": False, "note": "not enough recent data at this gage or upstream for a forecast"}
+    fc.update({"available": True, "horizon_min": 60, "skill": FORECAST_SKILL})
+    if fc["warning"] and ctx.state["alert"] == "clear" and not ctx.state.get("pending"):
+        fc["recommended_action"] = ("call request_human_approval with level='caution' now, as an EARLY WARNING based on "
+                                    "this forecast (quote the reason), and set next_check_minutes 15. Do not request "
+                                    "close_crossing or danger on a forecast.")
+    ctx.state["forecast"] = {"t": ctx.at, "p": fc["p_close_within_60min"], "warning": fc["warning"], "why": fc["why"],
+                             "mode": fc["mode"]}
+    return fc
+
+
 def tool_set_watch_level(ctx: Context, level: str, next_check_minutes: int, reason: str) -> dict:
     if next_check_minutes not in CADENCES:
         next_check_minutes = 60
     # guardrail: no relaxing while an alert is public or any recent reading implies caution or worse
     top, src = _highest_trusted_level(ctx)
-    if (level == "normal" or next_check_minutes == 60) and (ctx.state["alert"] != "clear" or top != "clear"):
-        why = f"public alert is {ctx.state['alert']}" if ctx.state["alert"] != "clear" else f"{src} implies {top}"
+    fc = ctx.state.get("forecast") or {}
+    fc_warn = bool(fc.get("warning")) and ctx.at - fc.get("t", 0) <= 3600
+    if (level == "normal" or next_check_minutes == 60) and (ctx.state["alert"] != "clear" or top != "clear" or fc_warn):
+        why = (f"public alert is {ctx.state['alert']}" if ctx.state["alert"] != "clear" else
+               f"{src} implies {top}" if top != "clear" else f"the forecast warns ({fc.get('why')})")
         return {"ok": False, "blocked_by_guardrail": True,
                 "note": f"cannot relax to normal / 60 min while the {why}. Use elevated with 15 or 30 min."}
     ctx.state["watch"] = level
@@ -313,7 +356,7 @@ def tool_flag_sensor_issue(ctx: Context, sensor: str, detail: str) -> dict:
     return {"ok": True}
 
 
-IMPL = {"measure_camera": tool_measure_camera, "view_camera_frame": tool_view_camera_frame, "get_gage": tool_get_gage, "get_upstream": tool_get_upstream,
+IMPL = {"forecast_crossing": tool_forecast_crossing, "measure_camera": tool_measure_camera, "view_camera_frame": tool_view_camera_frame, "get_gage": tool_get_gage, "get_upstream": tool_get_upstream,
         "set_watch_level": tool_set_watch_level, "request_human_approval": tool_request_human_approval,
         "flag_sensor_issue": tool_flag_sensor_issue}
 
@@ -329,6 +372,8 @@ def context_message(ctx: Context) -> str:
         "; ".join(f"{a['level']} >= {a['stage_ft']} ft ({a['meaning']})" for a in cfg["alerts"]) + ".",
         f"Camera can resolve stage from about {ctx.prof.calib.get('floor_ft')} ft; highest stage seen during calibration "
         f"{ctx.prof.calib.get('max_stage_seen_ft')} ft.",
+        ("Last forecast: " + (f"p={st['forecast']['p']} warning={st['forecast']['warning']} ({st['forecast']['why']})"
+                              if st.get("forecast") else "none") + "."),
         f"Current public alert: {st['alert']}. Internal watch: {st['watch']}. Pending approval: "
         f"{json.dumps(st['pending']) if st['pending'] else 'none'}.",
         "Recent readings (UTC, stage ft, source): " +
@@ -390,7 +435,7 @@ def run_cycle(ctx: Context, model, clock: Callable[[], float] = time.time) -> di
     ctx.state["readings"] = [x for x in ctx.state["readings"] if ctx.at - x["t"] <= 24 * 3600][-96:]
     return {"at": usgs.iso(ctx.at), "t": ctx.at, "cam_id": ctx.cam_id, "summary": summary, "model_calls": calls,
             "usage": usage, "latency_s": round(clock() - t0, 2), "steps": ctx.trace,
-            "state": {k: ctx.state[k] for k in ("watch", "alert", "pending", "next_check_minutes")}}
+            "state": {k: ctx.state.get(k) for k in ("watch", "alert", "pending", "next_check_minutes", "forecast")}}
 
 
 def _jsonable(o: Any):

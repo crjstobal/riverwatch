@@ -26,6 +26,9 @@ RiverWatch turns river cameras into water-level sensors and puts an agent in cha
   that refuses to guess at night, in fog or when the camera has moved.
 - **Reasons:** an Amazon Nova agent compares the camera with the official gage and the gage 12 km upstream, can look
   at the annotated frame itself, and decides how often to check (15, 30 or 60 min).
+- **Looks ahead:** a forecast trained on 9.5 years of both gages predicts whether the crossing closes within the next
+  hour. Evaluated year by year on data it never saw, it warned before 32 of 46 closures, 28 of them at least 30
+  minutes ahead; the agent turns that into an early caution request to the operator.
 - **Acts, with a human:** it files sensor issues and asks the duty operator to close the crossing, with evidence.
   Guardrails in code require two independent readings to escalate and forbid lowering an alert while a reading still
   implies danger. Nothing is published without the operator.
@@ -52,6 +55,9 @@ and the backup is stuck at 6.2 ft.
 - "Crossing under ≥ 1 ft of water" from the camera alone: precision 97%, recall 84%.
 - Agent: 23/24 scenario runs passed (silent gage, stuck gage, night, false camera spike, receding flood, missed
   detection at dusk, duplicate request), plus a full replay of the 2 October flood on a simulated clock.
+- Forecast: 46 closures since 2017, leave-one-year-out; warned ahead in 32, ≥ 30 min ahead in 28; about
+  3 warnings a year with the water staying below caution. It cannot warn when rain falls on the crossing's own
+  catchment (about half of the events): there the camera's early detection matters.
 - Failure cases documented: night infrared, sunlit gravel, readings above the calibrated range, missed water at dusk.
 
 ## Challenges
