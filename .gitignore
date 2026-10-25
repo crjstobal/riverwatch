@@ -18,3 +18,9 @@ __pycache__/
 *.pyc
 .DS_Store
 .env
+
+# video build outputs (published on YouTube instead)
+docs/video/build/
+docs/video/*.mp4
+docs/video/audio/
+docs/clips/

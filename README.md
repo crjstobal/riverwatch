@@ -5,6 +5,7 @@ cameras with **OpenCV 5**, cross-checks it against official gages, and an **Amaz
 next: look more often, flag a broken sensor, or ask a human operator to close the crossing.
 
 - Live status page: https://d206jwadatehui.cloudfront.net
+- Code: https://github.com/crjstobal/riverwatch
 - Built for the OpenCV AI Competition 2026, powered by AWS (overall track and Agentic Vision award).
 
 > Research prototype, not an official warning service. Thresholds follow NWS "Turn Around, Don't Drown" guidance.

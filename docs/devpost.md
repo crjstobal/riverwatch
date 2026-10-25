@@ -8,9 +8,9 @@
 
 **Links**
 - Live system: https://d206jwadatehui.cloudfront.net
-- Code: REPO_URL
+- Code: https://github.com/crjstobal/riverwatch
 - Video: VIDEO_URL
-- Technical report: REPO_URL/blob/main/docs/report.md
+- Technical report: https://github.com/crjstobal/riverwatch/blob/main/docs/report.md
 
 ## Inspiration
 

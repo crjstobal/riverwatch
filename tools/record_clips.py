@@ -17,7 +17,10 @@ SIZE = {"width": 1920, "height": 1080}
 
 async def clip(browser, name, actions):
     tmp = OUT / f"_{name}"
-    ctx = await browser.new_context(viewport=SIZE, device_scale_factor=1, record_video_dir=str(tmp), record_video_size=SIZE)
+    # record a 1440x810 viewport at its own size; make_video.py upscales it to 1920x1080, so the page text ends up
+    # about 33% larger and readable on video (Playwright pads instead of scaling when the sizes differ)
+    view = {"width": 1440, "height": 810}
+    ctx = await browser.new_context(viewport=view, record_video_dir=str(tmp), record_video_size=view)
     page = await ctx.new_page()
     await page.goto(URL, wait_until="networkidle")
     await page.wait_for_timeout(1500)
@@ -54,11 +57,12 @@ async def main():
 
         async def replay(page):
             await smooth_scroll(page, "#replay", -64, 1200)
-            await page.evaluate("showCycle(4)")
-            await page.wait_for_timeout(2500)
-            for i in range(5, 22):
+            # cycle 2 is 09:00 CDT, when the agent tightens to 15-min checks; 8 is the blocked request at 10:30
+            await page.evaluate("showCycle(2)")
+            await page.wait_for_timeout(3000)
+            for i in range(3, 16):
                 await page.evaluate(f"showCycle({i})")
-                await page.wait_for_timeout(2600)
+                await page.wait_for_timeout(3600)
             await page.wait_for_timeout(2000)
 
         async def evaluation(page):
@@ -73,10 +77,11 @@ async def main():
             await smooth_scroll(page, "#how", -64, 1200)
             await page.wait_for_timeout(9000)
 
-        await clip(b, "1_hero_live", hero_live)
-        await clip(b, "2_replay", replay)
-        await clip(b, "3_evaluation", evaluation)
-        await clip(b, "4_architecture", architecture)
+        only = sys.argv[2:] or ["1_hero_live", "2_replay", "3_evaluation", "4_architecture"]
+        for name, fn in [("1_hero_live", hero_live), ("2_replay", replay), ("3_evaluation", evaluation),
+                         ("4_architecture", architecture)]:
+            if name in only:
+                await clip(b, name, fn)
         await b.close()
 
 
