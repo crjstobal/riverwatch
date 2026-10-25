@@ -1,0 +1,32 @@
+TITLE
+RiverWatch: OpenCV 5 + an Amazon Nova agent watch a flooded low-water crossing | OpenCV AI Competition 2026
+
+DESCRIPTION
+On October 2, 2026, a low-water crossing near Fort Hood, Texas, went from dry to more than seven feet under water in about six hours. Over half of flood drownings happen when someone drives into water like this.
+
+RiverWatch turns existing USGS river cameras into water-level sensors and puts an agent in charge of what happens next:
+
+- Sees: classical OpenCV 5 (quality gate, ECC registration, dense normalized cross-correlation between frames, water-body tests, a virtual staff gauge) measures the river stage from each frame pair. Held out day by day: 20 cm mean error when water flows, 97% precision for "crossing under a foot of water".
+- Looks ahead: a forecast trained on 9.5 years of two gages predicts whether the crossing closes within the next hour. Tested year by year on data it never saw, it warned before 32 of 46 closures since 2017.
+- Acts, with a human: an Amazon Nova agent on Amazon Bedrock cross-checks the official gages, looks at the annotated frame itself, flags broken sensors and asks a duty operator to close the crossing. Guardrails in code; nothing reaches the public without a human.
+- Runs on AWS: Lambda on Graviton (OpenCV 5 + agent), EventBridge, Bedrock, S3, CloudFront, SNS.
+
+Live system: https://d206jwadatehui.cloudfront.net
+Code, technical report and evaluation: https://github.com/crjstobal/riverwatch
+
+Chapters
+0:00 The October 2 flash flood
+0:22 The problem: cameras nobody measures, gages that fail
+0:41 OpenCV 5 pipeline
+1:20 Results against the official gage
+1:42 Forecast: warning before the water arrives
+2:11 The agent, step by step (replay)
+2:55 Live on AWS
+3:17 Limits and what's next
+
+Built by Javier Cristóbal for the OpenCV AI Competition 2026, powered by AWS.
+Data: USGS HIVIS cameras and NWIS gages (public domain). Safety thresholds: NWS "Turn Around, Don't Drown" guidance.
+Research prototype, not an official warning service. Always follow local authorities.
+Narration: AI voice (ElevenLabs).
+
+#OpenCV #ComputerVision #AWS #AmazonBedrock #FloodSafety

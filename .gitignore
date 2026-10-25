@@ -26,3 +26,5 @@ docs/video/audio/
 docs/clips/
 data/history/
 data/eval/forecast_cv.npz
+docs/video/assets/
+docs/video/samples/
