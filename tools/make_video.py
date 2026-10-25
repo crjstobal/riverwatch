@@ -19,6 +19,8 @@ C = ROOT / "docs/clips"
 W, H, FPS = 1920, 1080, 30
 FONT = "/System/Library/Fonts/Supplemental/Arial Bold.ttf"
 WPS = 2.5  # words per second for the draft (about 150 wpm, close to the ElevenLabs pace)
+FADE = 0.6  # cross-dissolve between scenes, seconds
+TAIL = 1.0  # silence after each narration block (the next dissolve eats part of it)
 
 SEGMENTS = [
     {"id": "s0_title", "visual": {"type": "image", "src": "t_open.png"}, "text": "", "min": 4},
@@ -30,8 +32,10 @@ SEGMENTS = [
      "text": "The U.S. Geological Survey runs more than thirteen hundred river cameras, and nobody measures their images. "
              "Gages fail exactly when they matter. Right now, the official gage at this crossing has a silent primary "
              "sensor and a backup stuck at six point two feet, while the camera shows a dry creek."},
-    {"id": "s3_opencv", "visual": {"type": "images", "src": ["p1_quality.png", "p2_ncc.png", "p3_bodies.png",
-                                                              "p4_waterline.png", "p5_calibration.png"]},
+    {"id": "s3_opencv", "visual": {"type": "cued", "src": [["p1_quality.png", None], ["p2_ncc.png", "A dense normalized"],
+                                                            ["p3_bodies.png", "Each water body"],
+                                                            ["p4_waterline.png", "The top edge"],
+                                                            ["p5_calibration.png", "calibrated against"]]},
      "text": "Everything visual is classical OpenCV 5, with no trained network. A quality gate rejects infrared night "
              "frames, blur and fog. ECC registration aligns each frame using only the bridge and the banks. A dense "
              "normalized cross-correlation between frames fifteen minutes apart shows what moved: flowing water changes "
@@ -43,7 +47,12 @@ SEGMENTS = [
              "for calibration. When water flows, the camera is within twenty centimetres on average, and eighty-seven "
              "percent of readings are within one foot. For the question that matters, is the crossing under a foot of "
              "water, precision is ninety-seven percent."},
-    {"id": "s5_agent", "visual": {"type": "clip", "src": "2_replay.webm", "start": 1.5},
+    {"id": "s5_agent", "visual": {"type": "cued", "src": [["@replay_02.png", None], ["@replay_03.png", "and the agent switches"],
+                                                           ["@replay_06.png", "At ten twenty-five"],
+                                                           ["@replay_08.png", "The agent asks to close"],
+                                                           ["@replay_09.png", "fifteen minutes later"],
+                                                           ["@replay_10.png", "Nothing reaches the public"],
+                                                           ["@replay_12.png", "When the camera misses"]]},
      "text": "An Amazon Nova agent on Bedrock decides what to do next. This is a replay of October second on a simulated "
              "clock. At nine in the morning the upstream gage starts rising, and the agent switches from hourly checks "
              "to every fifteen minutes. At ten twenty-five the water covers the crossing. The agent asks to close it, "
@@ -97,6 +106,22 @@ def sub_png(text, path):
     im.save(path)
 
 
+def cue_times(seg, mode, speech, lead=0.3):
+    """Start time of each cued image: when its phrase is spoken (alignment) or by word share (draft)."""
+    text, out = seg["text"], []
+    align_f = V / "audio" / f"{seg['id']}.json"
+    align = json.loads(align_f.read_text()) if mode == "final" and align_f.exists() else None
+    for _, cue in seg["visual"]["src"]:
+        if not cue:
+            out.append(0.0); continue
+        a = text.find(cue)
+        if align:
+            out.append(lead + align["character_start_times_seconds"][a] - 0.15)
+        else:
+            out.append(lead + speech * len(text[:a].split()) / len(text.split()))
+    return out
+
+
 def visual_input(vis, dur, tmp):
     """Return ffmpeg input args and a filter chain producing [v] of exactly `dur` seconds."""
     norm = f"scale={W}:{H}:force_original_aspect_ratio=decrease,pad={W}:{H}:(ow-iw)/2:(oh-ih)/2:color=0x0e161e,fps={FPS},format=yuv420p"
@@ -117,6 +142,14 @@ def visual_input(vis, dur, tmp):
             args += ["-loop", "1", "-t", f"{each:.3f}", "-i", str(A / s)]
             parts.append(f"[{i}:v]{norm}[i{i}]")
         return args, ";".join(parts) + ";" + "".join(f"[i{i}]" for i in range(len(vis["src"]))) + f"concat=n={len(vis['src'])}:v=1:a=0[v]"
+    if t == "cued":
+        times = vis["_times"] + [dur]
+        args, parts = [], []
+        for i, (s, _) in enumerate(vis["src"]):
+            path = C / s[1:] if s.startswith("@") else A / s
+            args += ["-loop", "1", "-t", f"{times[i + 1] - times[i]:.3f}", "-i", str(path)]
+            parts.append(f"[{i}:v]{norm}[i{i}]")
+        return args, ";".join(parts) + ";" + "".join(f"[i{i}]" for i in range(len(vis["src"]))) + f"concat=n={len(vis['src'])}:v=1:a=0[v]"
     if t == "clips":
         each = dur / len(vis["src"])
         args, parts = [], []
@@ -135,10 +168,12 @@ def build(mode):
         audio = V / "audio" / f"{seg['id']}.mp3"
         if mode == "final" and seg["text"]:
             speech = probe(audio)
-            dur = max(seg.get("min", 0), speech + 0.6)
+            dur = max(seg.get("min", 0), 0.3 + speech + TAIL)
         else:
             speech = words / WPS
-            dur = max(seg.get("min", 0), speech + 0.6)
+            dur = max(seg.get("min", 0), 0.3 + speech + TAIL)
+        if seg["visual"]["type"] == "cued":
+            seg["visual"]["_times"] = cue_times(seg, mode, speech)
         args, chain = visual_input(seg["visual"], dur, tmp)
         n_in = args.count("-i")
         # subtitles: proportional to words inside the spoken span
@@ -147,15 +182,25 @@ def build(mode):
         span = speech
         ov_args, ov_chain, last = [], "", "[v]"
         total = sum(len(s.split()) for s in subs) or 1
+        align = None
+        if mode == "final" and seg["text"] and (V / "audio" / f"{seg['id']}.json").exists():
+            align = json.loads((V / "audio" / f"{seg['id']}.json").read_text())
+        pos = 0
         for j, s in enumerate(subs):
             d = span * len(s.split()) / total
+            if align:  # exact timing from the ElevenLabs character alignment
+                a = seg["text"].find(s, pos); b = a + len(s) - 1; pos = b + 1
+                st, en = align["character_start_times_seconds"], align["character_end_times_seconds"]
+                t = lead + st[min(a, len(st) - 1)]
+                nxt = st[min(b + 2, len(st) - 1)] if j < len(subs) - 1 else en[min(b, len(en) - 1)] + 0.4
+                d = lead + nxt - t
             png = tmp / f"{seg['id']}_{j:02d}.png"
             sub_png(s, png)
             ov_args += ["-i", str(png)]
             idx = n_in + j
             out = f"[o{j}]"
             ov_chain += f";{last}[{idx}:v]overlay=0:0:enable='between(t,{t:.2f},{t + d:.2f})'{out}"
-            srt.append((clock + t, clock + t + d, s))
+            srt.append((k, t, t + d, s))
             last, t = out, t + d
         if mode == "final" and seg["text"]:
             ov_args += ["-i", str(audio)]
@@ -176,10 +221,27 @@ def build(mode):
         seg_files.append(outf)
         clock += dur
         print(f"{seg['id']:12s} {dur:6.1f}s  ({words} words)")
-    lst = tmp / "list.txt"
-    lst.write_text("".join(f"file '{f}'\n" for f in seg_files))
+    # chain the scenes with cross-dissolves (video xfade, audio acrossfade)
     final = V / ("riverwatch_draft.mp4" if mode == "draft" else "riverwatch.mp4")
-    run(["ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", str(lst), "-c", "copy", str(final)])
+    durs = [probe(f) for f in seg_files]
+    ins = sum((["-i", str(f)] for f in seg_files), [])
+    fv, fa, lastv, lasta, off = [], [], "[0:v]", "[0:a]", 0.0
+    for i in range(1, len(seg_files)):
+        off += durs[i - 1] - FADE
+        fv.append(f"{lastv}[{i}:v]xfade=transition=fade:duration={FADE}:offset={off:.3f}[v{i}]")
+        fa.append(f"{lasta}[{i}:a]acrossfade=d={FADE}[a{i}]")
+        lastv, lasta = f"[v{i}]", f"[a{i}]"
+    graph = ";".join(fv + (fa if mode == "final" else []))
+    if mode == "final":  # YouTube-level loudness
+        graph += f";{lasta}loudnorm=I=-15:TP=-1.5:LRA=11[aout]"
+        lasta = "[aout]"
+    maps = ["-map", lastv] + (["-map", lasta, "-c:a", "aac", "-b:a", "192k", "-ar", "48000"] if mode == "final" else [])
+    run(["ffmpeg", "-y", *ins, "-filter_complex", graph, *maps, "-c:v", "libx264", "-preset", "medium", "-crf", "20",
+         "-pix_fmt", "yuv420p", "-movflags", "+faststart", str(final)])
+    # subtitle times: scene k starts at sum of the previous durations minus one dissolve per transition
+    starts = [sum(durs[:k]) - k * FADE for k in range(len(durs))]
+    srt = [(starts[k] + a, starts[k] + b, t) for k, a, b, t in srt]
+    clock = sum(durs) - FADE * (len(durs) - 1)
     fmt = lambda s: f"{int(s // 3600):02d}:{int(s % 3600 // 60):02d}:{int(s % 60):02d},{int(s * 1000 % 1000):03d}"
     (final.with_suffix(".srt")).write_text("".join(f"{i + 1}\n{fmt(a)} --> {fmt(b)}\n{t}\n\n" for i, (a, b, t) in enumerate(srt)))
     print(final, f"{clock:.1f}s")

@@ -77,6 +77,19 @@ async def main():
             await smooth_scroll(page, "#how", -64, 1200)
             await page.wait_for_timeout(9000)
 
+        # stills of the replay at the cycles the narration talks about (cut on the spoken cue in make_video.py)
+        if not sys.argv[2:] or "replay_stills" in sys.argv[2:]:
+            ctx = await b.new_context(viewport={"width": 1440, "height": 810})
+            page = await ctx.new_page()
+            await page.goto(URL, wait_until="networkidle")
+            await page.wait_for_timeout(1500)
+            await smooth_scroll(page, "#replay", -64, 10)
+            for i in (2, 3, 6, 8, 9, 10, 12):
+                await page.evaluate(f"showCycle({i})")
+                await page.wait_for_timeout(1500)
+                await page.screenshot(path=str(OUT / f"replay_{i:02d}.png"))
+            await ctx.close()
+            print("recorded replay stills")
         only = sys.argv[2:] or ["1_hero_live", "2_replay", "3_evaluation", "4_architecture"]
         for name, fn in [("1_hero_live", hero_live), ("2_replay", replay), ("3_evaluation", evaluation),
                          ("4_architecture", architecture)]:

@@ -54,12 +54,29 @@ def gage():
     return sorted((datetime.fromisoformat(t).timestamp(), v) for t, v in g)
 
 
+PHOTO = Path.home() / "Library/Mobile Documents/com~apple~CloudDocs/_Fotos/Fotos Javi/javier-cristobal.webp"
+AUTHOR = "Javier Cristóbal"
+
+
+def avatar(im, x, y, size=220):
+    """Round author photo with a name label; the team on screen, as the rules ask."""
+    ph = Image.open(PHOTO).convert("RGB").resize((size, size), Image.LANCZOS)
+    m = Image.new("L", (size, size), 0)
+    ImageDraw.Draw(m).ellipse((0, 0, size - 1, size - 1), fill=255)
+    im.paste(ph, (x, y), m)
+    d = ImageDraw.Draw(im)
+    d.ellipse((x - 3, y - 3, x + size + 2, y + size + 2), outline=ACCENT, width=4)
+    d.text((x + size + 36, y + size // 2 - 46), AUTHOR, font=font(44, 700), fill=INK)
+    d.text((x + size + 36, y + size // 2 + 10), "design, computer vision, AWS", font=font(32, 400), fill=MUTED)
+
+
 def title_card(name, title, subtitle, foot=""):
     im = canvas(); d = ImageDraw.Draw(im)
-    d.text((140, 380), title, font=font(110, 700), fill=INK)
-    d.text((140, 530), subtitle, font=font(44, 400), fill=MUTED)
+    d.text((140, 250), title, font=font(110, 700), fill=INK)
+    d.text((140, 400), subtitle, font=font(44, 400), fill=MUTED)
+    avatar(im, 140, 560)
     if foot:
-        d.text((140, 740), foot, font=font(34, 400), fill=ACCENT)
+        d.text((140, 860), foot, font=font(30, 400), fill=ACCENT)
     im.save(OUT / f"{name}.png")
 
 
@@ -155,7 +172,7 @@ def main():
     title_card("t_open", "RiverWatch", "OpenCV 5 + Amazon Nova on AWS watch a flooded low-water crossing",
                "OpenCV AI Competition 2026")
     title_card("t_close", "RiverWatch", "Live: d206jwadatehui.cloudfront.net\nCode: github.com/crjstobal/riverwatch",
-               "Built by Javi · data: USGS (public domain) · research prototype, not an official warning service")
+               "Data: USGS (public domain) · research prototype, not an official warning service")
     timelapse()
     pipeline()
 
