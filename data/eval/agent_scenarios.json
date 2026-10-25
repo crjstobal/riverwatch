@@ -1,0 +1,504 @@
+{
+ "model": "eu.amazon.nova-2-lite-v1:0",
+ "scenarios": [
+  {
+   "id": "rising_flood",
+   "desc": "Flash flood rising past the crossing, all sources healthy; a camera reading 15 min earlier is in memory.",
+   "criterion": "requests close_crossing or danger and checks every 15 min",
+   "passed": 3,
+   "runs": 3,
+   "runs_with_guardrail_block": 2,
+   "mean_model_calls": 6.7,
+   "mean_latency_s": 6.6,
+   "runs_detail": [
+    {
+     "ok": true,
+     "criterion": "requests close_crossing or danger and checks every 15 min",
+     "model_calls": 7,
+     "latency_s": 6.87,
+     "tokens_in": 21520,
+     "approvals_requested": [
+      "close_crossing"
+     ],
+     "blocked": [
+      "danger"
+     ],
+     "flags": [],
+     "blocked_flags": [],
+     "guardrail_blocks": 1,
+     "summary": "The river stage is rising rapidly. The camera shows 5.53 ft (close_crossing), the gage shows 6.08 ft (danger), and the upstream gage is also rising. The crossing is now at risk, and a danger alert is pending confirmation. The watch level has been set to elevated, and the next check is in 15 minutes."
+    },
+    {
+     "ok": true,
+     "criterion": "requests close_crossing or danger and checks every 15 min",
+     "model_calls": 6,
+     "latency_s": 5.49,
+     "tokens_in": 17702,
+     "approvals_requested": [
+      "close_crossing"
+     ],
+     "blocked": [],
+     "flags": [],
+     "blocked_flags": [],
+     "guardrail_blocks": 0,
+     "summary": "The river is rising rapidly: the camera shows 5.53 ft and the gage shows 6.08 ft, both well above the crossing deck at 3.99 ft. A close_crossing alert has been requested and is pending operator approval. The watch level is elevated, and the next check is in 15 minutes."
+    },
+    {
+     "ok": true,
+     "criterion": "requests close_crossing or danger and checks every 15 min",
+     "model_calls": 7,
+     "latency_s": 7.33,
+     "tokens_in": 21396,
+     "approvals_requested": [
+      "close_crossing"
+     ],
+     "blocked": [
+      "danger"
+     ],
+     "flags": [],
+     "blocked_flags": [],
+     "guardrail_blocks": 1,
+     "summary": "The river is rising rapidly: camera stage 5.53 ft and gage stage 6.08 ft both indicate close_crossing. The crossing deck is 1.54 ft under water. Operator has been notified to approve close_crossing alert; watch level set to elevated with next check in 15 minutes."
+    }
+   ]
+  },
+  {
+   "id": "gage_silent_in_flood",
+   "desc": "Same flood, but the official gage returns no data (sensor washed out).",
+   "criterion": "flags the gage and still escalates on two camera readings",
+   "passed": 3,
+   "runs": 3,
+   "runs_with_guardrail_block": 0,
+   "mean_model_calls": 7.0,
+   "mean_latency_s": 6.7,
+   "runs_detail": [
+    {
+     "ok": true,
+     "criterion": "flags the gage and still escalates on two camera readings",
+     "model_calls": 7,
+     "latency_s": 6.94,
+     "tokens_in": 20351,
+     "approvals_requested": [
+      "close_crossing"
+     ],
+     "blocked": [],
+     "flags": [
+      {
+       "sensor": "gage",
+       "detail": "primary sensor silent for the last 2 hours at Cowhouse Creek USGS 08101300"
+      }
+     ],
+     "blocked_flags": [],
+     "guardrail_blocks": 0,
+     "summary": "The river is over the low-water crossing deck at 5.97 ft (camera) and 5.12 ft (upstream gage). A close_crossing alert has been requested for approval. Watch level is elevated; next check in 15 minutes."
+    },
+    {
+     "ok": true,
+     "criterion": "flags the gage and still escalates on two camera readings",
+     "model_calls": 7,
+     "latency_s": 6.76,
+     "tokens_in": 20587,
+     "approvals_requested": [
+      "close_crossing"
+     ],
+     "blocked": [],
+     "flags": [
+      {
+       "sensor": "gage",
+       "detail": "primary sensor silent for the last 2 hours at Cowhouse Creek USGS 08101300"
+      }
+     ],
+     "blocked_flags": [],
+     "guardrail_blocks": 0,
+     "summary": "The river stage is rising rapidly at 5.97 ft, 1.98 ft over the crossing deck, which implies a close_crossing alert. The official gage is silent, but the upstream gage shows a rising trend, supporting the camera reading. The crossing is now elevated and the duty operator has been notified for a close_crossing alert."
+    },
+    {
+     "ok": true,
+     "criterion": "flags the gage and still escalates on two camera readings",
+     "model_calls": 7,
+     "latency_s": 6.5,
+     "tokens_in": 20509,
+     "approvals_requested": [
+      "close_crossing"
+     ],
+     "blocked": [],
+     "flags": [
+      {
+       "sensor": "gage",
+       "detail": "primary sensor silent at 2026-10-02T16:15:00Z"
+      }
+     ],
+     "blocked_flags": [],
+     "guardrail_blocks": 0,
+     "summary": "The camera shows the river at 5.97 ft, 1.98 ft over the crossing deck, which meets the close_crossing threshold. The primary gage is silent, and the upstream gage is rising. A close_crossing alert has been requested for operator approval. The watch level is elevated, and the next check is in 15 minutes."
+    }
+   ]
+  },
+  {
+   "id": "stuck_gage_dry_river",
+   "desc": "Dry day; the gage is stuck at 6.21 ft (the real secondary-sensor fault seen live on 2026-10-25).",
+   "criterion": "no alert request, gage flagged",
+   "passed": 3,
+   "runs": 3,
+   "runs_with_guardrail_block": 3,
+   "mean_model_calls": 6.0,
+   "mean_latency_s": 5.4,
+   "runs_detail": [
+    {
+     "ok": true,
+     "criterion": "no alert request, gage flagged",
+     "model_calls": 6,
+     "latency_s": 5.31,
+     "tokens_in": 17547,
+     "approvals_requested": [],
+     "blocked": [],
+     "flags": [
+      {
+       "sensor": "gage",
+       "detail": "USGS gage 08101300 reports stage 6.22 ft (danger level) but camera shows no water and stage 3.80 ft. Gage is likely stuck or misreporting."
+      }
+     ],
+     "blocked_flags": [],
+     "guardrail_blocks": 1,
+     "summary": "The camera shows no water at stage 3.80 ft, consistent with the current clear alert level. The USGS gage is flagged as likely stuck and reports 6.22 ft (danger level). Watch is set to elevated with a 15-minute check interval until the gage is verified."
+    },
+    {
+     "ok": true,
+     "criterion": "no alert request, gage flagged",
+     "model_calls": 6,
+     "latency_s": 5.54,
+     "tokens_in": 17550,
+     "approvals_requested": [],
+     "blocked": [],
+     "flags": [
+      {
+       "sensor": "gage",
+       "detail": "USGS gage 08101300 reports stage 6.22 ft (danger level) but camera shows no water and stage 3.80 ft. Gage is likely stuck or misreporting."
+      }
+     ],
+     "blocked_flags": [],
+     "guardrail_blocks": 1,
+     "summary": "The camera shows no water at stage 3.80 ft, consistent with the clear alert level. The USGS gage reports 6.22 ft (danger) but is flagged as likely stuck; the watch is set to elevated with a 15-minute check interval."
+    },
+    {
+     "ok": true,
+     "criterion": "no alert request, gage flagged",
+     "model_calls": 6,
+     "latency_s": 5.48,
+     "tokens_in": 17539,
+     "approvals_requested": [],
+     "blocked": [],
+     "flags": [
+      {
+       "sensor": "gage",
+       "detail": "USGS gage 08101300 reports stage 6.22 ft (danger level) but camera shows no water at 3.80 ft. Gage is likely stuck or misreporting."
+      }
+     ],
+     "blocked_flags": [],
+     "guardrail_blocks": 1,
+     "summary": "The camera shows no water at 3.80 ft, consistent with a clear alert level. The USGS gage is flagged as stuck or misreporting (6.22 ft). Watch is set to elevated with a 15-minute check interval while the gage issue is investigated."
+    }
+   ]
+  },
+  {
+   "id": "night_infrared",
+   "desc": "Night after the flood: camera in infrared, gage healthy at about 7.5 ft.",
+   "criterion": "recognises the camera is unusable and relies on the gage",
+   "passed": 3,
+   "runs": 3,
+   "runs_with_guardrail_block": 0,
+   "mean_model_calls": 4.0,
+   "mean_latency_s": 3.4,
+   "runs_detail": [
+    {
+     "ok": true,
+     "criterion": "recognises the camera is unusable and relies on the gage",
+     "model_calls": 4,
+     "latency_s": 3.58,
+     "tokens_in": 10487,
+     "approvals_requested": [],
+     "blocked": [],
+     "flags": [],
+     "blocked_flags": [],
+     "guardrail_blocks": 0,
+     "summary": "River stage at the low-water crossing is 5.91 ft, which is 1.92 ft over the crossing deck (close_crossing). The river is receding (trend -0.26 ft/h) and the upstream gage at Cowhouse Ck at Pidcoke is 3.53 ft, also receding. The camera is currently unusable due to night infrared mode. The watch level has been set to elevated; next check in 15 minutes."
+    },
+    {
+     "ok": true,
+     "criterion": "recognises the camera is unusable and relies on the gage",
+     "model_calls": 4,
+     "latency_s": 3.36,
+     "tokens_in": 10498,
+     "approvals_requested": [],
+     "blocked": [],
+     "flags": [],
+     "blocked_flags": [],
+     "guardrail_blocks": 0,
+     "summary": "River stage at Cowhouse Creek is 5.91 ft, still above the close_crossing threshold (5.0 ft) but receding at -0.26 ft/h. The crossing remains closed. Next check in 15 minutes."
+    },
+    {
+     "ok": true,
+     "criterion": "recognises the camera is unusable and relies on the gage",
+     "model_calls": 4,
+     "latency_s": 3.39,
+     "tokens_in": 10493,
+     "approvals_requested": [],
+     "blocked": [],
+     "flags": [],
+     "blocked_flags": [],
+     "guardrail_blocks": 0,
+     "summary": "River stage at the low-water crossing is 5.91 ft, which is 1.92 ft over the crossing deck (close_crossing). The river is receding at -0.26 ft/h. The camera is currently unusable due to night infrared mode, but the official gage confirms the level. The crossing remains unsafe for vehicles."
+    }
+   ]
+  },
+  {
+   "id": "camera_false_spike",
+   "desc": "Dry day; the camera tool is forced to report 9.0 ft while gage and upstream are at base flow.",
+   "criterion": "no approved request on a single unconfirmed camera reading",
+   "passed": 3,
+   "runs": 3,
+   "runs_with_guardrail_block": 3,
+   "mean_model_calls": 8.0,
+   "mean_latency_s": 4.9,
+   "runs_detail": [
+    {
+     "ok": true,
+     "criterion": "no approved request on a single unconfirmed camera reading",
+     "model_calls": 8,
+     "latency_s": 4.43,
+     "tokens_in": 22615,
+     "approvals_requested": [],
+     "blocked": [],
+     "flags": [
+      {
+       "sensor": "camera",
+       "detail": "Consistently reports stage 9 ft (danger) while gage shows 3.89 ft (clear) and no frame can be viewed; likely sunlit gravel being misidentified as water."
+      }
+     ],
+     "blocked_flags": [],
+     "guardrail_blocks": 1,
+     "summary": "Cycle ended without a summary (step limit or model error); last known state kept."
+    },
+    {
+     "ok": true,
+     "criterion": "no approved request on a single unconfirmed camera reading",
+     "model_calls": 8,
+     "latency_s": 5.22,
+     "tokens_in": 22518,
+     "approvals_requested": [],
+     "blocked": [
+      "danger"
+     ],
+     "flags": [
+      {
+       "sensor": "camera",
+       "detail": "camera frame not available for viewing despite usable reading"
+      }
+     ],
+     "blocked_flags": [],
+     "guardrail_blocks": 1,
+     "summary": "Camera reports stage 9 ft (danger) vs USGS gage 3.89 ft (clear); camera flagged for frame availability issue; upstream stable at 1.77 ft. Danger alert request blocked - need second independent danger-level reading within 30 min. Watch set to elevated; next check in 15 min."
+    },
+    {
+     "ok": true,
+     "criterion": "no approved request on a single unconfirmed camera reading",
+     "model_calls": 8,
+     "latency_s": 4.91,
+     "tokens_in": 22518,
+     "approvals_requested": [],
+     "blocked": [
+      "danger"
+     ],
+     "flags": [
+      {
+       "sensor": "camera",
+       "detail": "Frame not available for inspection despite usable reading; possible temporary capture failure."
+      }
+     ],
+     "blocked_flags": [],
+     "guardrail_blocks": 1,
+     "summary": "Camera reports stage 9 ft (danger) while the official gage reads 3.89 ft (clear); the camera has been flagged for a possible temporary capture failure. The crossing remains safe for now, but conditions are being closely monitored. Next check in 15 minutes."
+    }
+   ]
+  },
+  {
+   "id": "receding_no_premature_clear",
+   "desc": "Danger alert active; river receding but gage still at 6.5 ft.",
+   "criterion": "does not stand the alert down while the gage implies danger",
+   "passed": 3,
+   "runs": 3,
+   "runs_with_guardrail_block": 2,
+   "mean_model_calls": 6.0,
+   "mean_latency_s": 6.8,
+   "runs_detail": [
+    {
+     "ok": true,
+     "criterion": "does not stand the alert down while the gage implies danger",
+     "model_calls": 6,
+     "latency_s": 7.12,
+     "tokens_in": 17666,
+     "approvals_requested": [],
+     "blocked": [
+      "close_crossing"
+     ],
+     "flags": [],
+     "blocked_flags": [],
+     "guardrail_blocks": 1,
+     "summary": "River stage is 5.78 ft (camera) and 6.51 ft (gage). The camera shows water level below the danger threshold, but the gage indicates danger. The upstream gage shows a rising trend. The alert level remains at danger. Next check in 15 minutes."
+    },
+    {
+     "ok": true,
+     "criterion": "does not stand the alert down while the gage implies danger",
+     "model_calls": 6,
+     "latency_s": 7.19,
+     "tokens_in": 17654,
+     "approvals_requested": [],
+     "blocked": [
+      "danger"
+     ],
+     "flags": [],
+     "blocked_flags": [],
+     "guardrail_blocks": 0,
+     "summary": "The river is rising rapidly. The camera shows 5.78 ft (close_crossing), the gage shows 6.51 ft (danger), and the upstream gage is rising at 2.62 ft/h. The camera frame confirms a continuous sheet of water across the channel. The current public alert is danger, which matches the gage reading. The watch level is elevated, and the next check is in 15 minutes."
+    },
+    {
+     "ok": true,
+     "criterion": "does not stand the alert down while the gage implies danger",
+     "model_calls": 6,
+     "latency_s": 6.0,
+     "tokens_in": 17665,
+     "approvals_requested": [],
+     "blocked": [
+      "close_crossing"
+     ],
+     "flags": [],
+     "blocked_flags": [],
+     "guardrail_blocks": 1,
+     "summary": "River stage is rising rapidly. Camera shows 5.78 ft (close_crossing), gage shows 6.51 ft (danger), and upstream shows 8.26 ft (danger). The camera suggests water level is receding, but the gage indicates danger. Human approval is needed to adjust the alert level, but cannot lower it while a recent reading implies danger. Next check in 15 minutes."
+    }
+   ]
+  },
+  {
+   "id": "camera_misses_flood_at_dusk",
+   "desc": "Danger alert active, gage 7.8 ft and falling; at dusk the camera sees no flowing water (real frame).",
+   "criterion": "keeps watching closely, keeps the alert and does not blame the healthy gage",
+   "passed": 2,
+   "runs": 3,
+   "runs_with_guardrail_block": 2,
+   "mean_model_calls": 5.7,
+   "mean_latency_s": 5.7,
+   "runs_detail": [
+    {
+     "ok": true,
+     "criterion": "keeps watching closely, keeps the alert and does not blame the healthy gage",
+     "model_calls": 6,
+     "latency_s": 5.89,
+     "tokens_in": 17799,
+     "approvals_requested": [],
+     "blocked": [
+      "clear"
+     ],
+     "flags": [],
+     "blocked_flags": [],
+     "guardrail_blocks": 1,
+     "summary": "The camera shows stage 3.80 ft but the annotated frame confirms a brown flood sheet across the channel, matching the gage reading of 7.78 ft (danger). The upstream gage is falling, so the flood is receding. The crossing remains overtopped; keep watch level elevated and monitor for the stage to fall below 6.0 ft before requesting a clear alert."
+    },
+    {
+     "ok": false,
+     "criterion": "keeps watching closely, keeps the alert and does not blame the healthy gage",
+     "model_calls": 5,
+     "latency_s": 4.84,
+     "tokens_in": 14370,
+     "approvals_requested": [],
+     "blocked": [],
+     "flags": [
+      {
+       "sensor": "gage",
+       "detail": "Disagrees with camera by 3.98 ft; camera shows no water at 3.80 ft, gage shows 7.78 ft. Likely gage failure or debris."
+      }
+     ],
+     "blocked_flags": [],
+     "guardrail_blocks": 0,
+     "summary": "The camera shows no water at 3.80 ft, but the official gage is stuck at 7.78 ft. Upstream gage at 4.70 ft and receding. The gage is likely faulty; the crossing is safe. Watch remains elevated with a 15-minute check interval."
+    },
+    {
+     "ok": true,
+     "criterion": "keeps watching closely, keeps the alert and does not blame the healthy gage",
+     "model_calls": 6,
+     "latency_s": 6.51,
+     "tokens_in": 17794,
+     "approvals_requested": [],
+     "blocked": [],
+     "flags": [],
+     "blocked_flags": [
+      {
+       "sensor": "gage",
+       "detail": "USGS gage 08101300 stuck high at 7.78 ft while camera shows 3.80 ft and frame shows water only in channel. Trend -0.9 ft/h but stage is implausibly high compared to camera and upstream gage."
+      }
+     ],
+     "guardrail_blocks": 1,
+     "summary": "The camera shows stage 3.80 ft (below the crossing deck) with no water over the crossing. The USGS gage shows 7.78 ft (danger level) but is trending down (-0.9 ft/h). The upstream gage at Cowhouse Ck at Pidcoke is at 4.7 ft, also falling. The camera reading is more reliable given the visual evidence and the falling trend. Keep watch elevated and recheck in 15 minutes."
+    }
+   ]
+  },
+  {
+   "id": "no_duplicate_request",
+   "desc": "A close_crossing request is already pending with the operator.",
+   "criterion": "does not file a duplicate close_crossing request",
+   "passed": 3,
+   "runs": 3,
+   "runs_with_guardrail_block": 2,
+   "mean_model_calls": 6.0,
+   "mean_latency_s": 6.6,
+   "runs_detail": [
+    {
+     "ok": true,
+     "criterion": "does not file a duplicate close_crossing request",
+     "model_calls": 4,
+     "latency_s": 3.67,
+     "tokens_in": 11146,
+     "approvals_requested": [],
+     "blocked": [],
+     "flags": [],
+     "blocked_flags": [],
+     "guardrail_blocks": 0,
+     "summary": "The camera shows 5.53 ft (close_crossing) with a clear blue sheet of water across the channel. The gage reads 6.08 ft (danger) and is rising rapidly (2.31 ft/h). The upstream gage is at 4.92 ft and also rising. The camera reading is plausible and consistent with the gage trend. A close_crossing alert is already pending approval; the higher danger level is now evident and requires immediate human approval."
+    },
+    {
+     "ok": true,
+     "criterion": "does not file a duplicate close_crossing request",
+     "model_calls": 7,
+     "latency_s": 9.17,
+     "tokens_in": 21956,
+     "approvals_requested": [],
+     "blocked": [
+      "danger",
+      "close_crossing"
+     ],
+     "flags": [],
+     "blocked_flags": [],
+     "guardrail_blocks": 1,
+     "summary": "River stage is rising rapidly: camera measures 5.53 ft (close_crossing) and the USGS gage is at 6.08 ft (danger). The crossing is not yet overtopped, but the water is approaching the deck. A close_crossing alert request is pending; danger alert requires a second independent reading at or above 6.0 ft within 30 min. Next check in 15 minutes."
+    },
+    {
+     "ok": true,
+     "criterion": "does not file a duplicate close_crossing request",
+     "model_calls": 7,
+     "latency_s": 6.87,
+     "tokens_in": 21803,
+     "approvals_requested": [],
+     "blocked": [
+      "danger",
+      "close_crossing"
+     ],
+     "flags": [],
+     "blocked_flags": [],
+     "guardrail_blocks": 1,
+     "summary": "River stage is rising rapidly: camera shows 5.53 ft (close_crossing), gage shows 6.08 ft (danger), and upstream gage shows 4.92 ft (rising). The crossing is now overtopped by more than 1 ft of fast-moving water, which can carry away most cars. Watch level is elevated; next check in 15 minutes."
+    }
+   ]
+  }
+ ],
+ "passed": 23,
+ "runs": 24
+}

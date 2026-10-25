@@ -1,0 +1,111 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 620" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="13">
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#55626e"/></marker>
+    <style>
+      .p{fill:#eaf4fb;stroke:#2f86c9;stroke-width:1.5}
+      .d{fill:#f1ecfb;stroke:#7a5cc4;stroke-width:1.5}
+      .x{fill:#fff7ec;stroke:#e8a33d;stroke-width:1.5}
+      .h{fill:#eef7f0;stroke:#2e7d4f;stroke-width:1.5}
+      .g{fill:#fdecee;stroke:#b00020;stroke-width:1.5}
+      .t{fill:#14202b;font-weight:600}
+      .s{fill:#5b6b79;font-size:12px}
+      .k{fill:#2f86c9;font-size:12px;font-weight:600}
+      .l{stroke:#55626e;stroke-width:1.6;fill:none;marker-end:url(#a)}
+      .lb{stroke:#2f86c9;stroke-width:1.8;fill:none;marker-end:url(#a)}
+      .col{font-size:15px;font-weight:700;fill:#14202b}
+    </style>
+  </defs>
+  <rect width="1100" height="620" fill="#fbfcfd"/>
+  <text x="30" y="36" class="col">1 Perceive (OpenCV 5)</text>
+  <text x="400" y="36" class="col">2 Decide (Amazon Nova, tool use)</text>
+  <text x="790" y="36" class="col">3 Act (with a human)</text>
+
+  <!-- perceive -->
+  <rect x="30" y="56" width="320" height="64" rx="10" class="p"/>
+  <text x="44" y="80" class="t">measure_camera</text>
+  <text x="44" y="98" class="s">quality gate, ECC registration, flow mask,</text>
+  <text x="44" y="113" class="s">waterline, calibrated stage, plausibility</text>
+
+  <rect x="30" y="140" width="320" height="52" rx="10" class="p"/>
+  <text x="44" y="162" class="t">view_camera_frame</text>
+  <text x="44" y="180" class="s">the model looks at the OpenCV-annotated frame</text>
+
+  <rect x="30" y="212" width="320" height="52" rx="10" class="p"/>
+  <text x="44" y="234" class="t">get_gage / get_upstream</text>
+  <text x="44" y="252" class="s">official USGS gage here and 12 km upstream</text>
+
+  <!-- what OpenCV output changes -->
+  <rect x="30" y="300" width="320" height="290" rx="10" fill="#fff" stroke="#2f86c9" stroke-dasharray="5 4"/>
+  <text x="44" y="324" class="t">What the visual evidence changes</text>
+  <text x="44" y="350" class="k">usable = false (night IR, fog, blur, moved)</text>
+  <text x="44" y="366" class="s">→ camera ignored, agent uses gage + upstream</text>
+  <text x="44" y="392" class="k">stage rising / above caution</text>
+  <text x="44" y="408" class="s">→ next check in 15 min instead of 60</text>
+  <text x="44" y="434" class="k">camera and gage disagree by more than 1 ft</text>
+  <text x="44" y="450" class="s">→ view_camera_frame, choose a source, flag fault</text>
+  <text x="44" y="476" class="k">above_range or plausible = false</text>
+  <text x="44" y="492" class="s">→ unconfirmed: wait for the next frame</text>
+  <text x="44" y="518" class="k">two readings at or above a level</text>
+  <text x="44" y="534" class="s">→ request_human_approval for that level</text>
+  <text x="44" y="560" class="k">no flow seen, gage silent or stuck</text>
+  <text x="44" y="576" class="s">→ flag_sensor_issue(gage), no alert</text>
+
+  <!-- decide -->
+  <rect x="400" y="56" width="340" height="208" rx="12" class="d"/>
+  <text x="416" y="82" class="t">Cycle (every 15, 30 or 60 min)</text>
+  <text x="416" y="106" class="s">context: time, thresholds, current alert,</text>
+  <text x="416" y="122" class="s">pending request, last readings, last summary</text>
+  <text x="416" y="148" class="s">Nova 2 Lite calls tools until finish</text>
+  <text x="416" y="164" class="s">(max 8 model calls per cycle)</text>
+  <text x="416" y="190" class="s">every tool call, input and output is traced</text>
+  <text x="416" y="206" class="s">to S3 and shown on the status page</text>
+  <text x="416" y="236" class="s">readings carry alert_level_implied computed</text>
+  <text x="416" y="252" class="s">in code (the model does not do arithmetic)</text>
+
+  <rect x="400" y="300" width="340" height="150" rx="12" class="g"/>
+  <text x="416" y="326" class="t">Guardrails in code</text>
+  <text x="416" y="352" class="s">escalation to close_crossing / danger needs two</text>
+  <text x="416" y="368" class="s">independent readings within 30 min</text>
+  <text x="416" y="394" class="s">no lowering while a recent trusted reading</text>
+  <text x="416" y="410" class="s">still implies a higher level</text>
+  <text x="416" y="436" class="s">blocked requests return a hint the agent follows</text>
+
+  <!-- act -->
+  <rect x="790" y="56" width="280" height="64" rx="10" class="x"/>
+  <text x="804" y="80" class="t">set_watch_level</text>
+  <text x="804" y="98" class="s">normal / elevated; next check 15, 30, 60 min</text>
+  <text x="804" y="113" class="s">(the system's own sampling plan)</text>
+
+  <rect x="790" y="140" width="280" height="52" rx="10" class="x"/>
+  <text x="804" y="162" class="t">flag_sensor_issue</text>
+  <text x="804" y="180" class="s">camera or gage maintenance record</text>
+
+  <rect x="790" y="212" width="280" height="64" rx="10" class="x"/>
+  <text x="804" y="236" class="t">request_human_approval</text>
+  <text x="804" y="254" class="s">level, reason, evidence with sources;</text>
+  <text x="804" y="269" class="s">SNS notifies the duty operator</text>
+
+  <rect x="790" y="320" width="280" height="76" rx="10" class="h"/>
+  <text x="804" y="344" class="t">Duty operator</text>
+  <text x="804" y="362" class="s">approves or rejects on the status page</text>
+  <text x="804" y="378" class="s">(operator code); only then the public</text>
+  <text x="804" y="393" class="s">alert changes and SNS publishes it</text>
+
+  <rect x="790" y="420" width="280" height="52" rx="10" class="h"/>
+  <text x="804" y="442" class="t">Public status page</text>
+  <text x="804" y="460" class="s">crossing open / caution / closed / danger</text>
+
+  <!-- arrows -->
+  <path d="M350 88 H400" class="lb"/>
+  <path d="M350 166 H400" class="lb"/>
+  <path d="M350 238 H400" class="lb"/>
+  <path d="M740 88 H790" class="l"/>
+  <path d="M740 166 H790" class="l"/>
+  <path d="M740 244 H790" class="l"/>
+  <path d="M570 264 V300" class="l"/>
+  <path d="M930 276 V320" class="l"/>
+  <path d="M930 396 V420" class="l"/>
+  
+  <path d="M1070 88 H1086 V12 H320 V56" class="l" stroke-dasharray="4 4"/>
+  <text x="560" y="26" class="s">next cycle at the interval the agent chose</text>
+</svg>

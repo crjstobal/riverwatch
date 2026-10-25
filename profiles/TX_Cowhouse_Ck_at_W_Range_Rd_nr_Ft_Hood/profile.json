@@ -1,0 +1,14 @@
+{
+ "cam_id": "TX_Cowhouse_Ck_at_W_Range_Rd_nr_Ft_Hood",
+ "calib": {
+  "a": 2.832,
+  "b": 0.266448,
+  "c": 3.75,
+  "floor_ft": 3.81,
+  "median_abs_residual_ft": 0.27,
+  "n": 76,
+  "max_stage_seen_ft": 11.74,
+  "max_waterline_seen": 0.9361
+ },
+ "sharp_floor": 40.0
+}

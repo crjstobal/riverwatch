@@ -1,0 +1,5 @@
+# local tools and evaluation (Python 3.12+)
+opencv-python-headless==5.0.0.93
+numpy==2.2.6
+boto3==1.42.67
+matplotlib==3.10.8

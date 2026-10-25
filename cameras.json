@@ -1,0 +1,55 @@
+{
+ "TX_Cowhouse_Ck_at_W_Range_Rd_nr_Ft_Hood": {
+  "site": "08101300",
+  "label": "Cowhouse Creek at W Range Rd, Fort Hood, TX",
+  "channel": [
+   [
+    0.08,
+    0.435
+   ],
+   [
+    0.92,
+    0.435
+   ],
+   [
+    0.92,
+    0.67
+   ],
+   [
+    0.08,
+    0.68
+   ]
+  ],
+  "calib_until": "2026-10-03T00:00:00Z",
+  "flood_ft": 5.0,
+  "crossing_deck_ft": 3.99,
+  "alerts": [
+   {
+    "level": "caution",
+    "stage_ft": 4.5,
+    "meaning": "0.5 ft over the low-water crossing: 6 inches of fast-moving water can knock over an adult (NWS)"
+   },
+   {
+    "level": "close_crossing",
+    "stage_ft": 5.0,
+    "meaning": "1 ft over the crossing: 12 inches of rushing water can carry away most cars (NWS)"
+   },
+   {
+    "level": "danger",
+    "stage_ft": 6.0,
+    "meaning": "2 ft over the crossing: 2 feet of rushing water can carry away SUVs and trucks (NWS)"
+   }
+  ],
+  "upstream": [
+   {
+    "site": "08101000",
+    "name": "Cowhouse Ck at Pidcoke, TX",
+    "km": 12
+   }
+  ],
+  "lat": 31.21499444,
+  "lng": -97.7941944,
+  "utc_offset": -5,
+  "max_rise_ft_per_h": 8.0
+ }
+}

@@ -1,0 +1,20 @@
+# downloaded USGS frames (re-create with tools/download.py)
+data/cams/
+# scratch and diagnostics
+data/*.jpg
+data/*.png
+data/*.npy
+data/*.log
+data/eval/*/frames.json
+data/eval/*/test_rows.json
+err.log
+# build artifacts
+build/
+lambda.zip
+packaged.yaml
+.aws-sam/
+samconfig.toml
+__pycache__/
+*.pyc
+.DS_Store
+.env

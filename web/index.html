@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RiverWatch</title>
+<meta name="description" content="Camera-based flood watch for low-water crossings: OpenCV 5 on AWS Graviton, decisions by an Amazon Nova agent with a human in the loop.">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <div class="brand">
+      <svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true"><path d="M2 20c4 0 4-3 8-3s4 3 8 3 4-3 8-3 4 3 4 3" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/><path d="M2 26c4 0 4-3 8-3s4 3 8 3 4-3 8-3 4 3 4 3" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" opacity=".5"/><circle cx="16" cy="9" r="5" fill="none" stroke="currentColor" stroke-width="2.4"/><circle cx="16" cy="9" r="1.8" fill="currentColor"/></svg>
+      <span>RiverWatch</span>
+    </div>
+    <nav>
+      <a href="#live">Live</a><a href="#replay">Replay</a><a href="#evaluation">Evaluation</a><a href="#how">How it works</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="hero">
+    <h1>A camera that watches the low-water crossing for you</h1>
+    <p>Over half of flood drownings happen when a vehicle is driven into flood water, and low-water crossings are where it happens. RiverWatch reads the water level from existing
+      USGS river cameras with <strong>OpenCV 5</strong>, cross-checks it against official gages, and an
+      <strong>Amazon Nova</strong> agent decides what to do next: look more often, flag a broken sensor, or ask a
+      human to close the crossing. Everything runs on AWS (Lambda on Graviton, S3, CloudFront, Bedrock, SNS).</p>
+  </section>
+
+  <section id="live" class="card">
+    <div class="card-head">
+      <h2>Live: Cowhouse Creek at W Range Rd, Fort Hood, TX</h2>
+      <span class="muted" id="live-updated">loading…</span>
+    </div>
+    <div class="live-grid">
+      <figure class="frame">
+        <img id="live-frame" alt="Latest camera frame annotated by OpenCV: blue is water measured as flowing, the yellow line is the measured waterline">
+        <figcaption>Latest USGS camera frame, annotated by OpenCV 5 running in AWS Lambda. Blue: flowing water. Yellow: measured waterline.</figcaption>
+      </figure>
+      <div class="live-side">
+        <div class="alert-badge" id="live-alert">…</div>
+        <p id="live-summary" class="summary"></p>
+        <dl class="facts">
+          <dt>Agent watch level</dt><dd id="live-watch">–</dd>
+          <dt>Next check</dt><dd id="live-next">–</dd>
+          <dt>Last cycle</dt><dd id="live-cycle">–</dd>
+        </dl>
+        <div id="live-issues"></div>
+        <div id="live-pending" class="pending" hidden>
+          <h3>Waiting for the duty operator</h3>
+          <p id="pending-text"></p>
+          <form id="decision-form">
+            <label for="op-code">Operator code</label>
+            <input id="op-code" type="password" autocomplete="off" required>
+            <div class="row">
+              <button type="submit" data-d="approve" class="primary">Approve alert</button>
+              <button type="submit" data-d="reject">Reject</button>
+            </div>
+            <p id="decision-msg" class="muted"></p>
+          </form>
+        </div>
+      </div>
+    </div>
+    <h3 class="sub">Last 12 hours</h3>
+    <div id="live-chart" class="chart" role="img" aria-label="Recent stage readings from camera and gage"></div>
+    <details class="trace-box"><summary>Agent trace of the last cycle</summary><ol id="live-trace" class="trace"></ol></details>
+  </section>
+
+  <section id="replay" class="card">
+    <div class="card-head">
+      <h2>Replay: the 2 October 2026 flash flood</h2>
+      <span class="muted">real frames and gage data, agent re-run on a simulated clock</span>
+    </div>
+    <p class="note">The camera calibration used here was fitted <strong>without this day</strong>, so the flood is unseen.
+      Every tool only sees data up to the simulated time. The duty operator is simulated and approves 10 minutes after each request.</p>
+    <div class="player">
+      <button id="play" class="primary" aria-label="Play">▶ Play</button>
+      <input id="scrub" type="range" min="0" max="0" value="0" aria-label="Replay position">
+      <span id="replay-time" class="mono"></span>
+    </div>
+    <div class="live-grid">
+      <figure class="frame"><img id="replay-frame" alt="Camera frame at the selected time, annotated by OpenCV"><figcaption id="replay-caption"></figcaption></figure>
+      <div class="live-side">
+        <div class="alert-badge" id="replay-alert">…</div>
+        <p id="replay-summary" class="summary"></p>
+        <dl class="facts">
+          <dt>Official gage</dt><dd id="replay-truth">–</dd>
+          <dt>Camera (OpenCV 5)</dt><dd id="replay-cam">–</dd>
+          <dt>Next check chosen by agent</dt><dd id="replay-next">–</dd>
+        </dl>
+      </div>
+    </div>
+    <div id="replay-chart" class="chart tall" role="img" aria-label="Official gage, camera readings and alert levels during the flood"></div>
+    <ol id="replay-trace" class="trace"></ol>
+  </section>
+
+  <section id="evaluation" class="card">
+    <div class="card-head"><h2>Evaluation</h2><span class="muted">camera stage vs. official USGS gage, 2026-09-09 to 2026-10-20</span></div>
+    <div id="eval-stats" class="stats"></div>
+    <figure class="wide"><img src="data/eval/timeseries.png" alt="Camera estimates against the official gage over the evaluation period"><figcaption>Blocked cross-validation by day: each day is predicted with a calibration fitted on the other days only.</figcaption></figure>
+    <h3 class="sub">Where it fails</h3>
+    <ul class="fails" id="eval-fails"></ul>
+  </section>
+
+  <section id="how" class="card">
+    <h2>How it works</h2>
+    <figure class="wide"><img src="architecture.svg" alt="Architecture: USGS cameras and gages feed a Lambda on Graviton running OpenCV 5 and the agent loop, which calls Amazon Nova on Bedrock, stores state in S3, publishes through CloudFront and notifies the operator with SNS"></figure>
+    <figure class="wide"><img src="agent_workflow.svg" alt="Agent workflow: OpenCV perception tools feed an Amazon Nova decision cycle with guardrails in code; actions are the watch level, sensor issue reports and requests to a human operator who approves public alerts"></figure>
+    <ol class="steps">
+      <li><strong>Perceive (OpenCV 5).</strong> Quality gate (infrared night mode, blur, fog, contrast), ECC registration against the calibrated view using only static structures, flowing-water mask from local normalized cross-correlation between frames 15 minutes apart, waterline as the median top edge of the water body across the channel, monotone calibration to stage.</li>
+      <li><strong>Decide (Amazon Nova 2 Lite).</strong> The agent reads the camera, can look at the annotated frame itself, compares the official gage and the upstream gage, and chooses the next check interval.</li>
+      <li><strong>Act, with a human in the loop.</strong> Raising the public alert needs an operator. Guardrails in code: two independent confirmations to escalate, no lowering while a recent reading still implies a higher level.</li>
+    </ol>
+    <p class="muted">Data: USGS HIVIS cameras and NWIS gages (public domain). Thresholds: NWS "Turn Around, Don't Drown" guidance (6 inches of fast water can knock over an adult, 12 inches can carry away most cars, 2 feet can carry away SUVs and trucks).</p>
+  </section>
+</main>
+<footer class="wrap muted">RiverWatch, OpenCV AI Competition 2026. Research prototype: not an official warning service. Always follow local authorities.</footer>
+<script src="app.js"></script>
+</body>
+</html>

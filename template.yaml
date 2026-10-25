@@ -1,0 +1,164 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: RiverWatch - OpenCV 5 river cameras + Amazon Nova agent for low-water crossing flood alerts
+
+Parameters:
+  OperatorCodeSha256:
+    Type: String
+    NoEcho: true
+    Description: sha256 hex of the duty-operator code that approves public alerts
+  AlertEmail:
+    Type: String
+    Default: ""
+    Description: optional email subscribed to approval requests and alerts
+  ModelId:
+    Type: String
+    Default: eu.amazon.nova-2-lite-v1:0
+
+Conditions:
+  HasEmail: !Not [!Equals [!Ref AlertEmail, ""]]
+
+Resources:
+  DataBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault: {SSEAlgorithm: AES256}
+      LifecycleConfiguration:
+        Rules:
+          - Id: expire-traces
+            Status: Enabled
+            Prefix: site/data/traces/
+            ExpirationInDays: 90
+
+  AlertTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      DisplayName: RiverWatch
+
+  AlertSubscription:
+    Type: AWS::SNS::Subscription
+    Condition: HasEmail
+    Properties:
+      TopicArn: !Ref AlertTopic
+      Protocol: email
+      Endpoint: !Ref AlertEmail
+
+  AgentFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: build/
+      Handler: lambda_function.lambda_handler
+      Runtime: python3.12
+      Architectures: [arm64]
+      MemorySize: 2048
+      Timeout: 300
+      Environment:
+        Variables:
+          RIVERWATCH_BUCKET: !Ref DataBucket
+          RIVERWATCH_TOPIC_ARN: !Ref AlertTopic
+          RIVERWATCH_OPERATOR_CODE_SHA256: !Ref OperatorCodeSha256
+          RIVERWATCH_MODEL: !Ref ModelId
+          RIVERWATCH_BEDROCK_REGION: !Ref AWS::Region
+      Policies:
+        - S3CrudPolicy: {BucketName: !Ref DataBucket}
+        - SNSPublishMessagePolicy: {TopicName: !GetAtt AlertTopic.TopicName}
+        - Statement:
+            - Effect: Allow
+              Action: [bedrock:InvokeModel, bedrock:Converse]
+              Resource:
+                - !Sub arn:aws:bedrock:${AWS::Region}:${AWS::AccountId}:inference-profile/${ModelId}
+                - arn:aws:bedrock:*::foundation-model/amazon.nova-2-lite-v1:0
+                - arn:aws:bedrock:*::foundation-model/amazon.nova-pro-v1:0
+                - !Sub arn:aws:bedrock:${AWS::Region}:${AWS::AccountId}:inference-profile/eu.amazon.nova-pro-v1:0
+      FunctionUrlConfig:
+        AuthType: NONE
+      Events:
+        Every15Min:
+          Type: ScheduleV2
+          Properties:
+            ScheduleExpression: rate(15 minutes)
+            Input: "{}"
+
+  ApiCachePolicy:
+    Type: AWS::CloudFront::OriginRequestPolicy
+    Properties:
+      OriginRequestPolicyConfig:
+        Name: !Sub ${AWS::StackName}-api
+        CookiesConfig: {CookieBehavior: none}
+        HeadersConfig: {HeaderBehavior: none}
+        QueryStringsConfig: {QueryStringBehavior: all}
+
+  SiteOAC:
+    Type: AWS::CloudFront::OriginAccessControl
+    Properties:
+      OriginAccessControlConfig:
+        Name: !Sub ${AWS::StackName}-oac
+        OriginAccessControlOriginType: s3
+        SigningBehavior: always
+        SigningProtocol: sigv4
+
+  Distribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Enabled: true
+        Comment: RiverWatch status page
+        DefaultRootObject: index.html
+        HttpVersion: http2
+        Origins:
+          - Id: site
+            DomainName: !GetAtt DataBucket.RegionalDomainName
+            OriginPath: /site
+            S3OriginConfig: {OriginAccessIdentity: ""}
+            OriginAccessControlId: !GetAtt SiteOAC.Id
+          - Id: api
+            DomainName: !Select [2, !Split ["/", !GetAtt AgentFunctionUrl.FunctionUrl]]
+            CustomOriginConfig: {OriginProtocolPolicy: https-only}
+        DefaultCacheBehavior:
+          TargetOriginId: site
+          ViewerProtocolPolicy: redirect-to-https
+          CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad   # Managed-CachingDisabled: status changes every cycle
+          Compress: true
+        CacheBehaviors:
+          - PathPattern: /api/*
+            TargetOriginId: api
+            ViewerProtocolPolicy: https-only
+            AllowedMethods: [GET, HEAD, OPTIONS, PUT, POST, PATCH, DELETE]
+            CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad
+            OriginRequestPolicyId: !Ref ApiCachePolicy
+          - PathPattern: /data/replay/*
+            TargetOriginId: site
+            ViewerProtocolPolicy: redirect-to-https
+            CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6   # Managed-CachingOptimized: replays never change
+            Compress: true
+
+  BucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref DataBucket
+      PolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal: {Service: cloudfront.amazonaws.com}
+            Action: s3:GetObject
+            Resource: !Sub ${DataBucket.Arn}/site/*
+            Condition:
+              StringEquals:
+                AWS:SourceArn: !Sub arn:aws:cloudfront::${AWS::AccountId}:distribution/${Distribution}
+
+Outputs:
+  SiteUrl:
+    Value: !Sub https://${Distribution.DomainName}
+  BucketName:
+    Value: !Ref DataBucket
+  FunctionName:
+    Value: !Ref AgentFunction
+  FunctionUrl:
+    Value: !GetAtt AgentFunctionUrl.FunctionUrl

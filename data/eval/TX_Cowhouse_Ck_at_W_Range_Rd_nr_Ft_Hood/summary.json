@@ -1,0 +1,64 @@
+{
+ "camera": "TX_Cowhouse_Ck_at_W_Range_Rd_nr_Ft_Hood",
+ "label": "Cowhouse Creek at W Range Rd, Fort Hood, TX",
+ "period": [
+  "2026-09-09",
+  "2026-10-20"
+ ],
+ "frames": 3936,
+ "usable": 1066,
+ "usable_daytime": 583,
+ "rejected_by_reason": {
+  "night infrared mode (no colour, water texture not visible)": 1894,
+  "previous frame unusable": 1894,
+  "view does not match the calibrated camera (moved or obstructed)": 934,
+  "no previous frame to measure flow against": 1
+ },
+ "held_above_calibrated_range": 10,
+ "resolvable_floor_ft": 3.81,
+ "protocol": "blocked cross-validation by calendar day; calibration fitted on the other days only",
+ "vision_only": {
+  "frames_scored": 536,
+  "frames_above_floor": 119,
+  "mae_ft": 0.672,
+  "rmse_ft": 0.868,
+  "bias_ft": -0.273,
+  "within_0_5ft": 0.454,
+  "within_1ft": 0.874,
+  "flood": {
+   "threshold_ft": 5.0,
+   "tp": 59,
+   "fp": 2,
+   "fn": 11,
+   "precision": 0.967,
+   "recall": 0.843
+  }
+ },
+ "vision_plus_physics": {
+  "frames_scored": 536,
+  "frames_above_floor": 119,
+  "mae_ft": 0.614,
+  "rmse_ft": 0.716,
+  "bias_ft": -0.284,
+  "within_0_5ft": 0.471,
+  "within_1ft": 0.882,
+  "flood": {
+   "threshold_ft": 5.0,
+   "tp": 61,
+   "fp": 0,
+   "fn": 9,
+   "precision": 1.0,
+   "recall": 0.871
+  }
+ },
+ "example_calibration": {
+  "a": 2.832,
+  "b": 0.266448,
+  "c": 3.75,
+  "floor_ft": 3.81,
+  "median_abs_residual_ft": 0.27,
+  "n": 76,
+  "max_stage_seen_ft": 11.74,
+  "max_waterline_seen": 0.9361
+ }
+}
